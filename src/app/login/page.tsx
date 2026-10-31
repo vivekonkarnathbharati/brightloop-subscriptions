@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  ShieldCheck,
-  Building,
+  Shield,
+  Building2,
   Briefcase,
   Lock,
   Mail,
@@ -12,13 +12,11 @@ import {
   ArrowRight,
   CheckCircle2,
   AlertCircle,
-  Zap,
-  TrendingUp,
-  Receipt,
-  FileCheck,
-  Shield,
-  Layers,
+  Eye,
+  EyeOff,
   Sparkles,
+  Receipt,
+  TrendingUp,
 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -27,6 +25,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [keepSignedIn, setKeepSignedIn] = useState(true);
 
   // Form State
   const [email, setEmail] = useState('');
@@ -35,22 +35,20 @@ export default function LoginPage() {
   const [companyName, setCompanyName] = useState('');
   const [role, setRole] = useState<'CUSTOMER' | 'ADMIN' | 'STAFF'>('ADMIN');
 
-  // Evaluator Quick Fast-Track
+  // Quick Evaluator Sandbox Auto-fill
   const handleQuickSelect = (type: 'CUSTOMER' | 'ADMIN' | 'STAFF') => {
     setIsSignUp(false);
     setError(null);
+    setRole(type);
     if (type === 'ADMIN') {
       setEmail('admin@brightloop.io');
       setPassword('AdminPassword@2026');
-      setRole('ADMIN');
     } else if (type === 'CUSTOMER') {
       setEmail('rajesh@nexusretail.in');
       setPassword('NexusCustomer@2026');
-      setRole('CUSTOMER');
     } else if (type === 'STAFF') {
       setEmail('sarah.sales@brightloop.io');
       setPassword('SalesPassword@2026');
-      setRole('STAFF');
     }
   };
 
@@ -82,7 +80,7 @@ export default function LoginPage() {
       localStorage.setItem('brightloop_user', JSON.stringify(data.user));
       localStorage.setItem('brightloop_role', data.user.role);
 
-      setSuccessMsg(isSignUp ? 'Account created! Redirecting to workspace...' : 'Verified! Launching workspace...');
+      setSuccessMsg(isSignUp ? 'Account created! Launching workspace...' : 'Verified! Launching workspace...');
 
       setTimeout(() => {
         if (data.user.role === 'CUSTOMER') {
@@ -92,7 +90,7 @@ export default function LoginPage() {
         } else {
           router.push('/');
         }
-      }, 600);
+      }, 500);
     } catch (err: any) {
       setError(err.message || 'Authentication error');
     } finally {
@@ -101,110 +99,131 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col lg:flex-row font-sans selection:bg-purple-500/30">
-      {/* LEFT COLUMN: The Clean Enterprise Auth Terminal */}
-      <div className="flex-1 flex flex-col justify-between p-8 sm:p-12 lg:p-16 max-w-xl mx-auto w-full lg:max-w-none">
-        {/* Brand Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-indigo-500 flex items-center justify-center font-extrabold text-white shadow-lg shadow-purple-500/20">
-              BL
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-lg tracking-tight text-white">Brightloop</span>
-                <span className="text-[11px] bg-purple-500/15 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-md font-semibold tracking-wide uppercase">
-                  Enterprise ERP
-                </span>
-              </div>
-            </div>
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col lg:flex-row font-sans selection:bg-purple-100 selection:text-purple-900">
+      {/* ========================================================= */}
+      {/* LEFT COLUMN: Clean White Auth Terminal                    */}
+      {/* ========================================================= */}
+      <div className="flex-1 flex flex-col justify-between p-8 sm:p-14 lg:p-20 max-w-2xl mx-auto w-full lg:max-w-none">
+        {/* Brand Logo */}
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center font-bold text-white text-sm shadow-md shadow-purple-600/20">
+            BL
           </div>
-
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            Systems Operational
-          </div>
+          <span className="font-bold text-xl tracking-tight text-slate-900">
+            Brightloop
+          </span>
         </div>
 
-        {/* Auth Body */}
-        <div className="my-auto py-6">
+        {/* Auth Box */}
+        <div className="my-auto py-8 max-w-md w-full">
           <div className="mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-              {isSignUp ? 'Create your enterprise workspace' : 'Welcome back to Brightloop'}
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+              {isSignUp ? 'Create enterprise account' : 'Sign in'}
             </h1>
-            <p className="text-sm text-slate-400 mt-2">
+            <p className="text-sm text-slate-500 mt-1.5 font-normal">
               {isSignUp
-                ? 'Join thousands of SaaS & ERP teams scaling recurring revenue'
-                : 'Access the unified subscription lifecycle, GST billing & revenue engine'}
+                ? 'Register to manage subscriptions, quotas, and GST invoicing'
+                : 'Sign in to continue to Brightloop Billing Platform'}
             </p>
           </div>
 
-          {/* Evaluator Fast-Track Section */}
-          <div className="mb-6 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm">
+          {/* Evaluator Sandbox Access Cards */}
+          <div className="mb-7">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                Evaluator Sandbox Access:
+              <span className="text-xs font-bold text-slate-800">
+                Evaluator Sandbox Access
               </span>
-              <span className="text-[10px] text-slate-500 font-mono">1-Click Fast Track</span>
+              <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-semibold">
+                Demo data
+              </span>
             </div>
+            <p className="text-[11px] text-slate-400 mb-3">
+              Pick a role to auto-fill sandbox credentials:
+            </p>
 
-            <div className="grid grid-cols-3 gap-2.5">
-              <button
-                type="button"
-                onClick={() => handleQuickSelect('ADMIN')}
-                className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl border text-center transition ${
-                  role === 'ADMIN' && email === 'admin@brightloop.io'
-                    ? 'border-purple-500 bg-purple-500/15 text-white'
-                    : 'border-slate-800 bg-slate-800/40 text-slate-300 hover:bg-slate-800 hover:border-slate-700'
-                }`}
-              >
-                <ShieldCheck className="w-4 h-4 text-purple-400 mb-1" />
-                <span className="text-xs font-semibold">Admin</span>
-                <span className="text-[10px] text-slate-400">HQ Console</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickSelect('STAFF')}
-                className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl border text-center transition ${
-                  role === 'STAFF' && email === 'sarah.sales@brightloop.io'
-                    ? 'border-indigo-500 bg-indigo-500/15 text-white'
-                    : 'border-slate-800 bg-slate-800/40 text-slate-300 hover:bg-slate-800 hover:border-slate-700'
-                }`}
-              >
-                <Briefcase className="w-4 h-4 text-indigo-400 mb-1" />
-                <span className="text-xs font-semibold">Sales Staff</span>
-                <span className="text-[10px] text-slate-400">Quotes &amp; CRM</span>
-              </button>
-
+            <div className="grid grid-cols-3 gap-3">
+              {/* Customer */}
               <button
                 type="button"
                 onClick={() => handleQuickSelect('CUSTOMER')}
-                className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl border text-center transition ${
+                className={`p-3.5 rounded-2xl border text-left transition relative flex flex-col justify-between h-24 ${
                   role === 'CUSTOMER' && email === 'rajesh@nexusretail.in'
-                    ? 'border-emerald-500 bg-emerald-500/15 text-white'
-                    : 'border-slate-800 bg-slate-800/40 text-slate-300 hover:bg-slate-800 hover:border-slate-700'
+                    ? 'border-blue-500 bg-blue-50/50 shadow-sm'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
                 }`}
               >
-                <Building className="w-4 h-4 text-emerald-400 mb-1" />
-                <span className="text-xs font-semibold">Customer</span>
-                <span className="text-[10px] text-slate-400">Client Portal</span>
+                <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                  <Building2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-slate-800 leading-tight">Customer Portal</div>
+                  <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Invoices &amp; plans</div>
+                </div>
+              </button>
+
+              {/* Admin */}
+              <button
+                type="button"
+                onClick={() => handleQuickSelect('ADMIN')}
+                className={`p-3.5 rounded-2xl border text-left transition relative flex flex-col justify-between h-24 ${
+                  role === 'ADMIN' && email === 'admin@brightloop.io'
+                    ? 'border-purple-500 bg-purple-50/50 shadow-sm'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
+                }`}
+              >
+                <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center">
+                  <Shield className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-slate-800 leading-tight">Admin Console</div>
+                  <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Full ERP access</div>
+                </div>
+              </button>
+
+              {/* Employee */}
+              <button
+                type="button"
+                onClick={() => handleQuickSelect('STAFF')}
+                className={`p-3.5 rounded-2xl border text-left transition relative flex flex-col justify-between h-24 ${
+                  role === 'STAFF' && email === 'sarah.sales@brightloop.io'
+                    ? 'border-emerald-500 bg-emerald-50/50 shadow-sm'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
+                }`}
+              >
+                <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                  <Briefcase className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-slate-800 leading-tight">Employee / Sales</div>
+                  <div className="text-[10px] text-slate-400 leading-tight mt-0.5">Quotes &amp; pipeline</div>
+                </div>
               </button>
             </div>
           </div>
 
-          {/* Error & Success Banners */}
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200"></div>
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-white px-3 text-slate-400 font-medium">
+                or sign in with email
+              </span>
+            </div>
+          </div>
+
+          {/* Alerts */}
           {error && (
-            <div className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+            <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
               <span>{error}</span>
             </div>
           )}
 
           {successMsg && (
-            <div className="mb-5 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2.5">
-              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+            <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500" />
               <span>{successMsg}</span>
             </div>
           )}
@@ -214,97 +233,115 @@ export default function LoginPage() {
             {isSignUp && (
               <>
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                    Full Legal Name
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Full Name
                   </label>
                   <div className="relative">
-                    <User className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500" />
+                    <User className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
                     <input
                       type="text"
                       required
                       placeholder="e.g. Vikram Mehta"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600 transition"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                    Organization / Company Name
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Company Name
                   </label>
                   <div className="relative">
-                    <Building className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500" />
+                    <Building2 className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
                     <input
                       type="text"
-                      placeholder="e.g. Nexus Retail Enterprises"
+                      placeholder="e.g. Green Logistics Ltd"
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600 transition"
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                    Account Classification
-                  </label>
-                  <select
-                    value={role}
-                    onChange={(e: any) => setRole(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-purple-500 transition"
-                  >
-                    <option value="CUSTOMER">Customer Account (Access self-service portal)</option>
-                    <option value="STAFF">Sales &amp; Account Staff (Build quotes &amp; manage deals)</option>
-                    <option value="ADMIN">Enterprise Administrator (Global finance &amp; billing engine)</option>
-                  </select>
                 </div>
               </>
             )}
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                Work Email Address
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                Work email
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500" />
+                <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
                 <input
                   type="email"
                   required
-                  placeholder="name@company.com"
+                  placeholder="you@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600 transition"
                 />
               </div>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-medium text-slate-300">
+                <label className="block text-xs font-bold text-slate-700">
                   Password
                 </label>
                 {!isSignUp && (
-                  <span className="text-[11px] text-slate-400 hover:text-slate-300 cursor-pointer">
+                  <span className="text-xs text-purple-600 hover:text-purple-700 font-semibold cursor-pointer">
                     Forgot password?
                   </span>
                 )}
               </div>
               <div className="relative">
-                <Lock className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500" />
+                <Lock className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
-                  placeholder="••••••••••••"
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                  className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600 transition"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
-            <div className="pt-2 flex items-center justify-between">
+            {!isSignUp && (
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="keepSignedIn"
+                  checked={keepSignedIn}
+                  onChange={(e) => setKeepSignedIn(e.target.checked)}
+                  className="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500"
+                />
+                <label htmlFor="keepSignedIn" className="text-xs text-slate-600 select-none">
+                  Keep me signed in
+                </label>
+              </div>
+            )}
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm shadow-md shadow-purple-600/25 flex items-center justify-center gap-2 transition disabled:opacity-50"
+              >
+                <span>{loading ? 'Authenticating...' : isSignUp ? 'Create account' : 'Sign In'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="pt-2 text-center">
               <button
                 type="button"
                 onClick={() => {
@@ -312,112 +349,116 @@ export default function LoginPage() {
                   setError(null);
                   setSuccessMsg(null);
                 }}
-                className="text-xs text-purple-400 hover:text-purple-300 font-semibold transition"
+                className="text-xs text-slate-600 hover:text-slate-900 font-medium"
               >
-                {isSignUp ? 'Already registered? Sign In' : 'Create new enterprise account'}
-              </button>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-purple-500/25 flex items-center gap-2 transition disabled:opacity-50"
-              >
-                <span>{loading ? 'Authenticating...' : isSignUp ? 'Create Workspace' : 'Sign In to Platform'}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                {isSignUp ? (
+                  <>Already have an account? <span className="text-purple-600 font-bold">Sign in</span></>
+                ) : (
+                  <>Don&apos;t have an account? <span className="text-purple-600 font-bold">Create account</span></>
+                )}
               </button>
             </div>
           </form>
         </div>
 
-        {/* Compliance Footer */}
-        <div className="pt-8 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-4">
-          <div className="flex items-center gap-2">
-            <Shield className="w-3.5 h-3.5 text-slate-400" />
-            <span>256-bit TLS Encryption &bull; Role-Based Security</span>
+        {/* Footer */}
+        <div className="pt-6 flex items-center justify-between text-xs text-slate-400">
+          <span>&copy; 2026 Brightloop Inc.</span>
+          <div className="flex gap-4">
+            <span className="hover:text-slate-600 cursor-pointer">Privacy</span>
+            <span className="hover:text-slate-600 cursor-pointer">Terms</span>
+            <span className="hover:text-slate-600 cursor-pointer">Help</span>
           </div>
-          <div>Odoo x FLUX Hackathon &apos;26</div>
         </div>
       </div>
 
-      {/* RIGHT COLUMN: The High-End Enterprise Showcase Panel */}
-      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-slate-900 via-purple-950/40 to-slate-950 p-16 flex-col justify-between border-l border-slate-800/80 relative overflow-hidden">
-        {/* Glow Effects */}
-        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
-
-        {/* Top Feature Tag */}
-        <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-3 py-1.5 rounded-full text-xs font-medium text-purple-300 mb-6">
-            <Zap className="w-3.5 h-3.5 text-purple-400" />
-            Automated Billing &bull; Anti-Double Billing Engine
+      {/* ========================================================= */}
+      {/* RIGHT COLUMN: Soft Light-Purple Enterprise Showcase       */}
+      {/* ========================================================= */}
+      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-purple-50/60 via-indigo-50/40 to-slate-100 p-16 flex-col justify-between border-l border-slate-200">
+        {/* Top Header Tag */}
+        <div>
+          <div className="inline-flex items-center gap-2 bg-white border border-purple-200 text-purple-700 px-3 py-1 rounded-full text-xs font-semibold shadow-sm mb-6">
+            <Shield className="w-3.5 h-3.5 text-purple-600" />
+            SOC 2 Type II &bull; GST compliant
           </div>
-          <h2 className="text-3xl font-extrabold text-white leading-tight">
-            The Digital Operating System for Recurring Enterprise Revenue.
+
+          <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight leading-tight max-w-lg">
+            Recurring revenue, billed on autopilot.
           </h2>
-          <p className="text-slate-400 text-sm mt-3 leading-relaxed max-w-lg">
-            Say goodbye to spreadsheet leakage. Automate quotation approvals, multi-tier brand variants, 18% GST invoicing, and real-time MRR ledger sync.
+          <p className="text-slate-500 text-sm mt-3 leading-relaxed max-w-md">
+            Subscriptions, quotes, invoicing and tax &mdash; unified in one ledger your finance team can trust.
           </p>
         </div>
 
-        {/* Interactive Live Preview Mockup Card */}
-        <div className="my-auto relative z-10">
-          <div className="bg-slate-900/90 border border-slate-800 backdrop-blur-md rounded-2xl p-6 shadow-2xl space-y-4 max-w-md">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-xs">
-                  MRR
+        {/* Preview Card */}
+        <div className="my-auto max-w-md w-full">
+          <div className="bg-white rounded-3xl p-7 shadow-xl shadow-purple-900/5 border border-slate-200/80 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5 uppercase tracking-wider">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+                  Live MRR
+                </div>
+                <div className="text-3xl font-extrabold text-slate-900 mt-1 tracking-tight">
+                  $10,220.77
+                </div>
+              </div>
+              <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full font-bold">
+                +14.2%
+              </span>
+            </div>
+
+            {/* Mini Bar Chart Preview */}
+            <div className="flex items-end gap-2 h-16 pt-2">
+              <div className="flex-1 bg-purple-100 rounded-lg h-6"></div>
+              <div className="flex-1 bg-purple-100 rounded-lg h-8"></div>
+              <div className="flex-1 bg-purple-200 rounded-lg h-10"></div>
+              <div className="flex-1 bg-purple-200 rounded-lg h-9"></div>
+              <div className="flex-1 bg-purple-300 rounded-lg h-12"></div>
+              <div className="flex-1 bg-purple-300 rounded-lg h-11"></div>
+              <div className="flex-1 bg-purple-400 rounded-lg h-13"></div>
+              <div className="flex-1 bg-purple-600 rounded-lg h-16 shadow-md shadow-purple-600/30"></div>
+            </div>
+
+            {/* Two Pills */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
+                <div className="text-[10px] text-slate-400 uppercase font-semibold">Tax engine</div>
+                <div className="text-xs font-extrabold text-slate-800 mt-0.5 flex items-center gap-1">
+                  18% GST <span className="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.2 rounded font-bold">AUTO</span>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
+                <div className="text-[10px] text-slate-400 uppercase font-semibold">Collection rate</div>
+                <div className="text-xs font-extrabold text-slate-800 mt-0.5 flex items-center gap-1">
+                  <TrendingUp className="w-3.5 h-3.5 text-blue-500" />
+                  98.6%
+                </div>
+              </div>
+            </div>
+
+            {/* Quote */}
+            <div className="pt-4 border-t border-slate-100">
+              <p className="text-xs text-slate-600 leading-relaxed italic">
+                &ldquo;Brightloop closed our month-end in hours, not days. GST is calculated on every invoice automatically, and our MRR is finally a number we can trust.&rdquo;
+              </p>
+              <div className="flex items-center gap-3 mt-3.5">
+                <div className="w-7 h-7 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-[10px]">
+                  RS
                 </div>
                 <div>
-                  <div className="text-xs font-semibold text-white">Monthly Recurring Revenue</div>
-                  <div className="text-[10px] text-emerald-400 font-medium">+14.2% Growth vs Last Period</div>
+                  <div className="text-xs font-bold text-slate-800">Rajesh Sharma</div>
+                  <div className="text-[10px] text-slate-400">VP of Finance at Nexus Retail</div>
                 </div>
               </div>
-              <span className="text-lg font-bold text-white tracking-tight">$10,220.77</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
-                <div className="text-[11px] text-slate-400">GST Invoice Engine</div>
-                <div className="text-sm font-bold text-white mt-0.5">18.0% Auto-Applied</div>
-                <div className="text-[10px] text-emerald-400 mt-1 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Duplicate-Proof
-                </div>
-              </div>
-
-              <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
-                <div className="text-[11px] text-slate-400">Variant Price Delta</div>
-                <div className="text-sm font-bold text-white mt-0.5">+$560.00</div>
-                <div className="text-[10px] text-purple-300 mt-1 flex items-center gap-1">
-                  <Layers className="w-3 h-3" /> Odoo Brand Tier
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></div>
-                <span className="text-[11px]">Ready for 05:30 PM Grand Evaluation</span>
-              </div>
-              <span className="text-[10px] text-slate-400 font-mono">OD-2026-FLUX</span>
             </div>
           </div>
         </div>
 
-        {/* Enterprise Testimonial / Social Proof */}
-        <div className="relative z-10 pt-6 border-t border-slate-800/60">
-          <p className="text-xs text-slate-400 italic leading-relaxed">
-            &ldquo;Brightloop replaced four separate tools across quotation generation, GST invoicing, and UPI payment reconciliations. We eliminated double-billing completely.&rdquo;
-          </p>
-          <div className="flex items-center gap-3 mt-3">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-500 flex items-center justify-center font-bold text-[10px] text-white">
-              RS
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-slate-200">Rajesh Sharma</div>
-              <div className="text-[10px] text-slate-500">VP of Finance &bull; Nexus Retail Enterprises</div>
-            </div>
-          </div>
-        </div>
+        {/* Empty bottom spacer for layout symmetry */}
+        <div></div>
       </div>
     </div>
   );
