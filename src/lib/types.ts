@@ -7,6 +7,8 @@ export interface User {
   role: Role;
   avatar?: string;
   companyName?: string;
+  phone?: string;
+  employeeId?: string;
 }
 
 export type ProductType = 'SOFTWARE' | 'ADDON' | 'SERVICE';

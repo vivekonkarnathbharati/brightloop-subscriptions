@@ -63,7 +63,11 @@ interface BrightloopContextType {
   isAuthenticated: boolean;
   setIsAuthenticated: (val: boolean) => void;
   loginWithRole: (role: Role) => void;
-  loginWithEmail: (email: string, password?: string) => { success: boolean; error?: string };
+  loginWithEmail: (
+    identifier: string,
+    password?: string,
+    portalRole?: Role
+  ) => { success: boolean; error?: string };
   logout: () => void;
 
   // Role booleans
@@ -205,19 +209,65 @@ export function BrightloopProvider({ children }: { children: React.ReactNode }) 
     }
   };
 
-  const loginWithEmail = (email: string, password?: string): { success: boolean; error?: string } => {
-    const targetUser = users.find(
-      (u) =>
-        u.email.toLowerCase() === email.toLowerCase() ||
-        u.name.toLowerCase() === email.toLowerCase()
-    );
+  const loginWithEmail = (
+    identifier: string,
+    password?: string,
+    portalRole?: Role
+  ): { success: boolean; error?: string } => {
+    const cleanId = identifier.trim().toLowerCase();
+    const cleanPhone = cleanId.replace(/[^0-9]/g, '');
+
+    const targetUser = users.find((u) => {
+      const matchEmail = u.email.toLowerCase() === cleanId;
+      const matchName = u.name.toLowerCase() === cleanId;
+      const matchEmpId = u.employeeId && u.employeeId.toLowerCase() === cleanId;
+      const matchPhone = u.phone && (
+        u.phone.toLowerCase() === cleanId ||
+        (cleanPhone.length >= 7 && u.phone.replace(/[^0-9]/g, '').includes(cleanPhone))
+      );
+      return matchEmail || matchName || matchEmpId || matchPhone;
+    });
+
     if (!targetUser) {
-      return { success: false, error: 'No account found with this email or username.' };
+      if (portalRole === 'ADMIN') {
+        return { success: false, error: 'Invalid Corporate Admin ID or official email.' };
+      }
+      if (portalRole === 'STAFF') {
+        return { success: false, error: 'Invalid Employee ID or staff email.' };
+      }
+      return { success: false, error: 'No account found with this email or mobile number.' };
     }
-    // Optional password verification
-    if (password && password.length < 4) {
-      return { success: false, error: 'Password is too short.' };
+
+    // Role Enforcement for Portal Isolation
+    if (portalRole && targetUser.role !== portalRole) {
+      if (portalRole === 'ADMIN' && targetUser.role !== 'ADMIN') {
+        return {
+          success: false,
+          error: 'Security Notice: This account does not have Admin clearance. Access denied.',
+        };
+      }
+      if (portalRole === 'STAFF' && targetUser.role === 'CUSTOMER') {
+        return {
+          success: false,
+          error: 'Notice: Customer accounts cannot log into the internal Employee Sales portal.',
+        };
+      }
+      if (portalRole === 'CUSTOMER' && targetUser.role !== 'CUSTOMER') {
+        return {
+          success: false,
+          error: 'Notice: Internal staff should log in via Admin Console or Employee portal.',
+        };
+      }
     }
+
+    // Password verification
+    if (!password || password.trim().length === 0) {
+      return { success: false, error: 'Please enter your password.' };
+    }
+    if (password.length < 4) {
+      return { success: false, error: 'Password must be at least 4 characters.' };
+    }
+
     setCurrentUser(targetUser);
     setIsAuthenticated(true);
     addNotification(`Signed in successfully as ${targetUser.name} (${targetUser.role})`, 'success');
