@@ -61,7 +61,12 @@ export default function CustomerPortalPage() {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
         setCustomers(data);
-        if (!selectedCustomerId) {
+        const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+        const targetId = params?.get('customerId') || (typeof window !== 'undefined' ? localStorage.getItem('brightloop_customer_id') : null);
+
+        if (targetId && data.some((c: any) => c.id === targetId)) {
+          setSelectedCustomerId(targetId);
+        } else if (!selectedCustomerId) {
           setSelectedCustomerId(data[0].id);
         }
       }
