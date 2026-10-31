@@ -110,7 +110,7 @@ export function Navbar({ onRunBilling }: NavbarProps) {
               </span>
             )}
             <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-              Odoo 2026
+              Brightloop v2.0
             </span>
           </div>
         </div>

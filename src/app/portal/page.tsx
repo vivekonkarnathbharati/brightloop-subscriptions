@@ -140,7 +140,7 @@ export default function CustomerPortalPage() {
 
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId);
 
-  // Exact Hackathon Problem Statement Password Validation:
+  // Password Validation Policy:
   // "more than eight characters, with an uppercase letter, a lowercase letter and a special character."
   const validatePassword = (pass: string) => {
     if (pass.length <= 8) return 'Password must be more than 8 characters';
@@ -834,7 +834,7 @@ export default function CustomerPortalPage() {
                 </select>
               </div>
 
-              {/* Product Variant (e.g. +$560 Odoo Brand Delta) */}
+              {/* Product Variant Selector */}
               {currentSelectedProduct?.variants && currentSelectedProduct.variants.length > 0 && (
                 <div>
                   <label className="block text-slate-300 font-semibold mb-1">

@@ -84,7 +84,7 @@ interface BrightloopContextType {
   closeSubscription: (id: string) => void;
 
   // Billing & Invoicing Operations
-  generateInvoiceForSubscription: (subscriptionId: string) => { success: boolean; invoice?: Invoice; error?: string };
+  generateInvoiceForSubscription: (subscriptionId: string, options?: { force?: boolean }) => { success: boolean; invoice?: Invoice; error?: string };
   runBillingDay: () => BillingRunResult;
   updateInvoiceStatus: (id: string, status: InvoiceStatus) => void;
 
@@ -97,16 +97,24 @@ interface BrightloopContextType {
 
   // Admin Tax Operations
   createTaxRule: (rule: Omit<TaxRule, 'id'>) => { success: boolean; error?: string };
+  updateTaxRule: (taxId: string, data: Partial<TaxRule>) => { success: boolean; error?: string };
+  deleteTaxRule: (taxId: string) => { success: boolean; error?: string };
 
   // Product & Variant Operations
   createProduct: (product: Omit<Product, 'id' | 'variants'>) => Product;
+  updateProduct: (productId: string, data: Partial<Product>) => { success: boolean; error?: string };
+  deleteProduct: (productId: string) => { success: boolean; error?: string };
   addProductVariant: (productId: string, variant: { name: string; attributeName: string; attributeValue: string; priceDelta: number }) => void;
 
   // Plan Operations
   createPlan: (plan: Omit<Plan, 'id'>) => Plan;
+  updatePlan: (planId: string, planData: Partial<Plan>) => { success: boolean; error?: string };
+  deletePlan: (planId: string) => { success: boolean; error?: string };
 
   // Staff & User Operations
   addStaffMember: (name: string, email: string) => { success: boolean; error?: string };
+  updateStaffMember: (userId: string, data: { name: string; email: string; role?: Role }) => { success: boolean; error?: string };
+  deleteStaffMember: (userId: string) => { success: boolean; error?: string };
   registerCustomer: (name: string, email: string, password: string, companyName?: string) => { success: boolean; error?: string };
 }
 
@@ -188,7 +196,7 @@ export function BrightloopProvider({ children }: { children: React.ReactNode }) 
     setPayments(INITIAL_PAYMENTS);
     setDiscounts(INITIAL_DISCOUNTS);
     setTaxRules(INITIAL_TAX_RULES);
-    addNotification('Reset to pristine hackathon demo dataset.', 'info');
+    addNotification('Reset to pristine demo dataset.', 'info');
   };
 
   const switchRole = (role: Role) => {
@@ -365,27 +373,65 @@ export function BrightloopProvider({ children }: { children: React.ReactNode }) 
   };
 
   // 2. Billing Engine with Zero Double-Billing Guarantee
-  const generateInvoiceForSubscription = (subscriptionId: string): { success: boolean; invoice?: Invoice; error?: string } => {
+  const generateInvoiceForSubscription = (
+    subscriptionId: string,
+    options?: { force?: boolean }
+  ): { success: boolean; invoice?: Invoice; error?: string } => {
     const sub = subscriptions.find((s) => s.id === subscriptionId);
-    if (!sub) return { success: false, error: 'Subscription not found' };
-    if (sub.status !== 'ACTIVE') return { success: false, error: 'Only ACTIVE subscriptions can be billed.' };
-    if (sub.isPaused) return { success: false, error: 'Subscription is currently paused.' };
+    if (!sub) {
+      addNotification('Subscription not found.', 'error');
+      return { success: false, error: 'Subscription not found' };
+    }
+    if (sub.status !== 'ACTIVE') {
+      addNotification(`Cannot bill: ${sub.subscriptionNumber} is in status ${sub.status}.`, 'error');
+      return { success: false, error: 'Only ACTIVE subscriptions can be billed.' };
+    }
+    if (sub.isPaused) {
+      addNotification(`Cannot bill: ${sub.subscriptionNumber} is currently paused.`, 'error');
+      return { success: false, error: 'Subscription is currently paused.' };
+    }
 
     const todayStr = new Date().toISOString().split('T')[0];
 
-    // Check for double billing: If an invoice already exists for this subscription in the current month/period
-    const existingActiveInvoice = invoices.find(
-      (inv) =>
-        inv.subscriptionId === sub.id &&
-        inv.status !== 'CANCELLED' &&
-        inv.invoiceDate.slice(0, 7) === todayStr.slice(0, 7) // Same YYYY-MM
+    // Find previous non-cancelled invoices for this subscription
+    const existingInvoices = invoices.filter(
+      (inv) => inv.subscriptionId === sub.id && inv.status !== 'CANCELLED'
     );
 
-    if (existingActiveInvoice) {
+    const existingThisMonth = existingInvoices.find(
+      (inv) => inv.invoiceDate.slice(0, 7) === todayStr.slice(0, 7)
+    );
+
+    if (existingThisMonth && !options?.force) {
       return {
         success: false,
-        error: `Zero Double-Billing Guard: Invoice ${existingActiveInvoice.invoiceNumber} already exists for this billing period (${todayStr.slice(0, 7)}).`,
+        error: `Zero Double-Billing Guard: Invoice ${existingThisMonth.invoiceNumber} already exists for this billing period (${todayStr.slice(0, 7)}).`,
       };
+    }
+
+    // Determine billing period: if force generated, advance cycle to next period
+    let periodStart = todayStr;
+    const periodEndObj = new Date();
+    if (sub.billingFrequency === 'YEARLY') periodEndObj.setFullYear(periodEndObj.getFullYear() + 1);
+    else if (sub.billingFrequency === 'WEEKLY') periodEndObj.setDate(periodEndObj.getDate() + 7);
+    else if (sub.billingFrequency === 'DAILY') periodEndObj.setDate(periodEndObj.getDate() + 1);
+    else periodEndObj.setMonth(periodEndObj.getMonth() + 1);
+
+    if (existingInvoices.length > 0) {
+      const sorted = [...existingInvoices].sort((a, b) => b.billingPeriodEnd.localeCompare(a.billingPeriodEnd));
+      const latestEnd = sorted[0]?.billingPeriodEnd;
+      if (latestEnd) {
+        const nextStart = new Date(latestEnd);
+        nextStart.setDate(nextStart.getDate() + 1);
+        periodStart = nextStart.toISOString().split('T')[0];
+
+        const nextEnd = new Date(nextStart);
+        if (sub.billingFrequency === 'YEARLY') nextEnd.setFullYear(nextEnd.getFullYear() + 1);
+        else if (sub.billingFrequency === 'WEEKLY') nextEnd.setDate(nextEnd.getDate() + 7);
+        else if (sub.billingFrequency === 'DAILY') nextEnd.setDate(nextEnd.getDate() + 1);
+        else nextEnd.setMonth(nextEnd.getMonth() + 1);
+        periodEndObj.setTime(nextEnd.getTime());
+      }
     }
 
     // Auto-calculate discounts if applicable
@@ -411,7 +457,7 @@ export function BrightloopProvider({ children }: { children: React.ReactNode }) 
       );
     }
 
-    const calculatedTax = ((sub.subtotal - totalDiscount) * 18) / 100;
+    const calculatedTax = Math.round(((sub.subtotal - totalDiscount) * 18) / 100 * 100) / 100;
     const grandTotal = Math.max(0, sub.subtotal - totalDiscount + calculatedTax);
 
     // Calculate due date (Net 15 default)
@@ -419,35 +465,43 @@ export function BrightloopProvider({ children }: { children: React.ReactNode }) 
     dueDateObj.setDate(dueDateObj.getDate() + 15);
     const dueDateStr = dueDateObj.toISOString().split('T')[0];
 
-    // Next period end
-    const periodEndObj = new Date();
-    if (sub.billingFrequency === 'YEARLY') periodEndObj.setFullYear(periodEndObj.getFullYear() + 1);
-    else periodEndObj.setMonth(periodEndObj.getMonth() + 1);
-
     const nextInvNum = invoices.length + 1;
     const newInvoice: Invoice = {
-      id: `inv-${Date.now()}`,
+      id: `inv-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       invoiceNumber: `INV-2026-${String(nextInvNum).padStart(3, '0')}`,
       subscriptionId: sub.id,
       subscriptionNumber: sub.subscriptionNumber,
       customerId: sub.customerId,
       customerName: sub.customerName,
       customerEmail: sub.customerEmail,
-      billingPeriodStart: todayStr,
+      billingPeriodStart: periodStart,
       billingPeriodEnd: periodEndObj.toISOString().split('T')[0],
       invoiceDate: todayStr,
       dueDate: dueDateStr,
       status: 'CONFIRMED',
-      lines: sub.lines.map((l) => ({
-        id: `iline-${Date.now()}-${l.id}`,
-        productName: `${l.productName} ${l.variantName ? `(${l.variantName})` : ''}`,
-        quantity: l.quantity,
-        unitPrice: l.unitPrice,
-        taxRate: l.taxRate,
-        taxAmount: (l.lineTotal * l.taxRate) / 100,
-        discountAmount: 0,
-        total: l.lineTotal,
-      })),
+      lines: sub.lines && sub.lines.length > 0
+        ? sub.lines.map((l) => ({
+            id: `iline-${Date.now()}-${l.id}`,
+            productName: `${l.productName} ${l.variantName ? `(${l.variantName})` : ''}`,
+            quantity: l.quantity,
+            unitPrice: l.unitPrice,
+            taxRate: l.taxRate,
+            taxAmount: (l.lineTotal * l.taxRate) / 100,
+            discountAmount: 0,
+            total: l.lineTotal,
+          }))
+        : [
+            {
+              id: `iline-${Date.now()}-core`,
+              productName: `${sub.planName} Recurring Package`,
+              quantity: 1,
+              unitPrice: sub.subtotal,
+              taxRate: 18,
+              taxAmount: calculatedTax,
+              discountAmount: totalDiscount,
+              total: sub.subtotal,
+            },
+          ],
       subtotal: sub.subtotal,
       taxTotal: calculatedTax,
       discountTotal: totalDiscount,
@@ -468,6 +522,11 @@ export function BrightloopProvider({ children }: { children: React.ReactNode }) 
     setSubscriptions(updatedSubs);
     saveToLocal('subscriptions', updatedSubs);
 
+    addNotification(
+      `✓ Invoice ${newInvoice.invoiceNumber} ($${grandTotal.toFixed(2)}) generated for ${sub.customerName}.`,
+      'success'
+    );
+
     return { success: true, invoice: newInvoice };
   };
 
@@ -481,12 +540,20 @@ export function BrightloopProvider({ children }: { children: React.ReactNode }) 
       messages: [],
     };
 
+    if (activeSubs.length === 0) {
+      addNotification('Billing Run: No active subscriptions eligible for billing.', 'info');
+      return result;
+    }
+
+    let totalBilled = 0;
     activeSubs.forEach((sub) => {
-      const genResult = generateInvoiceForSubscription(sub.id);
+      // Force next cycle generation in simulated batch billing run
+      const genResult = generateInvoiceForSubscription(sub.id, { force: true });
       if (genResult.success && genResult.invoice) {
         result.generatedCount++;
         result.invoices.push(genResult.invoice);
-        result.messages.push(`Generated ${genResult.invoice.invoiceNumber} for ${sub.customerName}`);
+        totalBilled += genResult.invoice.grandTotal;
+        result.messages.push(`Generated ${genResult.invoice.invoiceNumber} for ${sub.customerName} ($${genResult.invoice.grandTotal.toFixed(2)})`);
       } else {
         result.skippedCount++;
         result.messages.push(`Skipped ${sub.subscriptionNumber}: ${genResult.error}`);
@@ -494,8 +561,8 @@ export function BrightloopProvider({ children }: { children: React.ReactNode }) 
     });
 
     addNotification(
-      `Billing Day Run: ${result.generatedCount} invoices created, ${result.skippedCount} skipped (zero double-billing enforced).`,
-      result.generatedCount > 0 ? 'success' : 'info'
+      `⚡ Batch Billing Run Completed: ${result.generatedCount} invoice(s) generated ($${totalBilled.toFixed(2)} total billed).`,
+      'success'
     );
     return result;
   };
@@ -594,6 +661,39 @@ export function BrightloopProvider({ children }: { children: React.ReactNode }) 
     return { success: true };
   };
 
+  const updateTaxRule = (taxId: string, data: Partial<TaxRule>): { success: boolean; error?: string } => {
+    if (!isAdmin) {
+      addNotification('Access Denied: Only Admin can modify tax rules.', 'error');
+      return { success: false, error: 'Unauthorized.' };
+    }
+    const target = taxRules.find((t) => t.id === taxId);
+    if (!target) return { success: false, error: 'Tax rule not found.' };
+
+    let updated = taxRules.map((t) => (t.id === taxId ? { ...t, ...data } : t));
+    if (data.isDefault) {
+      updated = updated.map((t) => (t.id === taxId ? t : { ...t, isDefault: false }));
+    }
+    setTaxRules(updated);
+    saveToLocal('taxRules', updated);
+    addNotification(`Tax rule "${data.name || target.name}" updated successfully.`);
+    return { success: true };
+  };
+
+  const deleteTaxRule = (taxId: string): { success: boolean; error?: string } => {
+    if (!isAdmin) {
+      addNotification('Access Denied: Only Admin can delete tax rules.', 'error');
+      return { success: false, error: 'Unauthorized.' };
+    }
+    const target = taxRules.find((t) => t.id === taxId);
+    if (!target) return { success: false, error: 'Tax rule not found.' };
+
+    const updated = taxRules.filter((t) => t.id !== taxId);
+    setTaxRules(updated);
+    saveToLocal('taxRules', updated);
+    addNotification(`Tax rule "${target.name}" removed.`, 'info');
+    return { success: true };
+  };
+
   // 7. Product & Variant Management
   const createProduct = (productData: Omit<Product, 'id' | 'variants'>): Product => {
     const newProd: Product = {
@@ -606,6 +706,36 @@ export function BrightloopProvider({ children }: { children: React.ReactNode }) 
     saveToLocal('products', updated);
     addNotification(`Product "${newProd.name}" added to catalog.`);
     return newProd;
+  };
+
+  const updateProduct = (productId: string, data: Partial<Product>): { success: boolean; error?: string } => {
+    if (!isAdmin) {
+      addNotification('Access Denied: Only Admin can edit products.', 'error');
+      return { success: false, error: 'Unauthorized.' };
+    }
+    const target = products.find((p) => p.id === productId);
+    if (!target) return { success: false, error: 'Product not found.' };
+
+    const updated = products.map((p) => (p.id === productId ? { ...p, ...data } : p));
+    setProducts(updated);
+    saveToLocal('products', updated);
+    addNotification(`Product "${data.name || target.name}" updated successfully.`);
+    return { success: true };
+  };
+
+  const deleteProduct = (productId: string): { success: boolean; error?: string } => {
+    if (!isAdmin) {
+      addNotification('Access Denied: Only Admin can delete products.', 'error');
+      return { success: false, error: 'Unauthorized.' };
+    }
+    const target = products.find((p) => p.id === productId);
+    if (!target) return { success: false, error: 'Product not found.' };
+
+    const updated = products.filter((p) => p.id !== productId);
+    setProducts(updated);
+    saveToLocal('products', updated);
+    addNotification(`Product "${target.name}" removed from catalog.`, 'info');
+    return { success: true };
   };
 
   const addProductVariant = (
@@ -639,6 +769,36 @@ export function BrightloopProvider({ children }: { children: React.ReactNode }) 
     return newPlan;
   };
 
+  const updatePlan = (planId: string, planData: Partial<Plan>): { success: boolean; error?: string } => {
+    if (!isAdmin) {
+      addNotification('Access Denied: Only Admin can modify subscription plans.', 'error');
+      return { success: false, error: 'Unauthorized.' };
+    }
+    const target = plans.find((p) => p.id === planId);
+    if (!target) return { success: false, error: 'Plan not found.' };
+
+    const updated = plans.map((p) => (p.id === planId ? { ...p, ...planData } : p));
+    setPlans(updated);
+    saveToLocal('plans', updated);
+    addNotification(`Subscription Plan "${planData.name || target.name}" updated successfully.`);
+    return { success: true };
+  };
+
+  const deletePlan = (planId: string): { success: boolean; error?: string } => {
+    if (!isAdmin) {
+      addNotification('Access Denied: Only Admin can delete subscription plans.', 'error');
+      return { success: false, error: 'Unauthorized.' };
+    }
+    const planToDelete = plans.find((p) => p.id === planId);
+    if (!planToDelete) return { success: false, error: 'Plan not found.' };
+
+    const updated = plans.filter((p) => p.id !== planId);
+    setPlans(updated);
+    saveToLocal('plans', updated);
+    addNotification(`Subscription Plan "${planToDelete.name}" removed.`, 'info');
+    return { success: true };
+  };
+
   // 9. Staff Management (Admin only)
   const addStaffMember = (name: string, email: string): { success: boolean; error?: string } => {
     if (!isAdmin) {
@@ -660,6 +820,52 @@ export function BrightloopProvider({ children }: { children: React.ReactNode }) 
     setUsers(updated);
     saveToLocal('users', updated);
     addNotification(`New staff member "${name}" invited successfully.`);
+    return { success: true };
+  };
+
+  const updateStaffMember = (
+    userId: string,
+    data: { name: string; email: string; role?: Role }
+  ): { success: boolean; error?: string } => {
+    if (!isAdmin) {
+      addNotification('Access Denied: Only Admin can modify staff members.', 'error');
+      return { success: false, error: 'Unauthorized.' };
+    }
+    const target = users.find((u) => u.id === userId);
+    if (!target) return { success: false, error: 'Staff member not found.' };
+
+    const updated = users.map((u) =>
+      u.id === userId
+        ? {
+            ...u,
+            name: data.name,
+            email: data.email,
+            role: data.role || u.role,
+          }
+        : u
+    );
+    setUsers(updated);
+    saveToLocal('users', updated);
+    addNotification(`Staff member "${data.name}" updated successfully.`);
+    return { success: true };
+  };
+
+  const deleteStaffMember = (userId: string): { success: boolean; error?: string } => {
+    if (!isAdmin) {
+      addNotification('Access Denied: Only Admin can remove staff members.', 'error');
+      return { success: false, error: 'Unauthorized.' };
+    }
+    if (userId === currentUser.id) {
+      addNotification('Security Guard: You cannot delete your currently logged-in account.', 'error');
+      return { success: false, error: 'Cannot delete current account.' };
+    }
+    const target = users.find((u) => u.id === userId);
+    if (!target) return { success: false, error: 'Staff member not found.' };
+
+    const updated = users.filter((u) => u.id !== userId);
+    setUsers(updated);
+    saveToLocal('users', updated);
+    addNotification(`Staff member "${target.name}" removed from roster.`, 'info');
     return { success: true };
   };
 
@@ -748,13 +954,21 @@ export function BrightloopProvider({ children }: { children: React.ReactNode }) 
         toggleDiscountActive,
 
         createTaxRule,
+        updateTaxRule,
+        deleteTaxRule,
 
         createProduct,
+        updateProduct,
+        deleteProduct,
         addProductVariant,
 
         createPlan,
+        updatePlan,
+        deletePlan,
 
         addStaffMember,
+        updateStaffMember,
+        deleteStaffMember,
         registerCustomer,
       }}
     >

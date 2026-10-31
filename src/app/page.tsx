@@ -26,10 +26,12 @@ function AppContent() {
   const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState<string | undefined>(undefined);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  // Customer can only access portal and new_subscription
+  // Customer is scoped to the portal and subscription enrollment
   useEffect(() => {
     if (isCustomer && activeTab !== 'portal' && activeTab !== 'new_subscription') {
       setActiveTab('portal');
+    } else if (!isCustomer && activeTab === 'new_subscription') {
+      setActiveTab('subscriptions');
     }
   }, [isCustomer, activeTab]);
 
@@ -71,7 +73,10 @@ function AppContent() {
           {activeTab === 'taxes' && <TaxesView />}
           {activeTab === 'staff' && <StaffView />}
           {activeTab === 'portal' && (
-            <CustomerPortalView onPayInvoice={handleRecordPaymentForInvoice} />
+            <CustomerPortalView
+              onPayInvoice={handleRecordPaymentForInvoice}
+              onNavigateToNewSub={() => setActiveTab('new_subscription')}
+            />
           )}
           {activeTab === 'new_subscription' && (
             <NewSubscriptionView onComplete={() => setActiveTab('portal')} />

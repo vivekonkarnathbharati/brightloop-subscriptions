@@ -207,7 +207,7 @@ export function UnifiedAuthModal({ isOpen, onClose, defaultTab = 'signin' }: Uni
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
 
-            {/* Quick Presets for Hackathon Testing */}
+            {/* Quick Role Presets */}
             <div className="pt-3 border-t border-slate-100">
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
                 One-Click Account Fillers (Testing):

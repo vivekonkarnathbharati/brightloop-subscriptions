@@ -320,9 +320,9 @@ export function SubscriptionsView() {
                           <>
                             {/* Bill Now Trigger */}
                             <button
-                              onClick={() => generateInvoiceForSubscription(sub.id)}
-                              className="p-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-lg"
-                              title="Generate this cycle's invoice (Zero Double-Billing)"
+                              onClick={() => generateInvoiceForSubscription(sub.id, { force: true })}
+                              className="p-1.5 bg-[#FAF3EC] hover:bg-[#F3E6D6] text-[#A76D3B] rounded-lg transition-transform active:scale-95 border border-[#E9DAC8]"
+                              title="Generate next cycle's invoice"
                             >
                               <Zap className="w-3.5 h-3.5" />
                             </button>
@@ -519,10 +519,10 @@ export function SubscriptionsView() {
               {selectedSub.status === 'ACTIVE' && (
                 <button
                   onClick={() => {
-                    generateInvoiceForSubscription(selectedSub.id);
+                    generateInvoiceForSubscription(selectedSub.id, { force: true });
                     setSelectedSub(null);
                   }}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-700 hover:to-sky-700 text-white rounded-xl text-xs font-semibold shadow-sm shadow-sky-500/20 flex items-center gap-1.5"
+                  className="px-4 py-2 bg-gradient-to-r from-[#C29367] to-[#B88457] hover:from-[#B88457] hover:to-[#A76D3B] text-white rounded-xl text-xs font-semibold shadow-sm flex items-center gap-1.5 active:scale-95 transition-all"
                 >
                   <Zap className="w-3.5 h-3.5" />
                   Generate Invoice Now
@@ -657,7 +657,7 @@ export function SubscriptionsView() {
 
                   <div>
                     <label className="block text-slate-600 mb-1">
-                      Variant (e.g. Odoo Brand +560)
+                      Variant (e.g. Enterprise Edition +$850)
                     </label>
                     <select
                       value={selectedVariantId}

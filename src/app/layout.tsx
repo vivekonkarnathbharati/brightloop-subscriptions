@@ -4,7 +4,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Brightloop — Subscription Management & Automated Billing Engine',
   description:
-    'Full-stack subscription management, automated recurring billing, discount engine, and executive finance dashboard for Brightloop Software (Odoo Hackathon 2026).',
+    'Full-stack subscription management, automated recurring billing, discount engine, and executive finance dashboard for Brightloop Software.',
 };
 
 export default function RootLayout({

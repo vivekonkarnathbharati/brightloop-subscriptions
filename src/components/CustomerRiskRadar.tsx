@@ -26,7 +26,7 @@ export default function CustomerRiskRadar() {
       score: 94,
       status: 'HEALTHY',
       statusColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-      reason: 'Prompt payer (IMPS HDFC), Odoo Brand Edition, auto-renew enabled.',
+      reason: 'Prompt payer (IMPS HDFC), Enterprise White-label Edition, auto-renew enabled.',
       exposure: '$8,491 / mo',
       actionLabel: 'Loyalty Upgrade',
     },

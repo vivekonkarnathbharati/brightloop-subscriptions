@@ -62,7 +62,7 @@ export function DiscountsView() {
             <h1 className="text-2xl font-bold tracking-tight text-[#2C2621] flex items-center gap-2">
               Discount Engine
               <span className="text-xs px-2.5 py-0.5 rounded-full font-mono font-bold bg-[#F5EDE1] text-[#7A4B20] border border-[#E5D7C5]">
-                Admin Restricted
+                Full Admin Authority
               </span>
             </h1>
             <p className="text-xs text-[#7A6D61] mt-0.5">
@@ -91,9 +91,9 @@ export function DiscountsView() {
         <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-2xl flex items-start gap-3 text-xs text-amber-900">
           <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
           <div>
-            <div className="font-bold">RBAC Enforcement Active</div>
+            <div className="font-bold">Enterprise Role-Based Access Control</div>
             <p className="text-amber-800 mt-0.5">
-              You are signed in as Internal Staff. As defined in the hackathon rules, only an Admin can define discount rules or change usage caps. You can view existing discounts applied to customer quotes.
+              You are signed in with Staff access. Per enterprise governance policy, only System Administrators can create discount rules or modify usage caps. Staff members have read-only visibility over promotional codes applied to customer quotes.
             </p>
           </div>
         </div>

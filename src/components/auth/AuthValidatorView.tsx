@@ -55,7 +55,7 @@ export function AuthValidatorView() {
     }
   };
 
-  // Preset quick test runner for hackathon judges!
+  // Quick test runner for auth policy validation
   const runEdgeCaseTest = (testCase: 'EIGHT_CHARS' | 'NO_SPECIAL' | 'DUP_EMAIL' | 'VALID') => {
     if (testCase === 'EIGHT_CHARS') {
       setPassword('Abcdef1!'); // exactly 8 chars -> Must FAIL because prompt says "> 8 characters"
@@ -95,7 +95,7 @@ export function AuthValidatorView() {
       <div className="p-4 bg-[#F5EDE1] border border-[#E5D7C5] rounded-2xl">
         <div className="text-xs font-bold uppercase tracking-wider text-[#3D3126] mb-2 flex items-center gap-1.5">
           <ShieldCheck className="w-4 h-4 text-[#B88457]" />
-          Quick Test Case Fillers (Hackathon Preset)
+          Quick Auth Policy Test Cases
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <button

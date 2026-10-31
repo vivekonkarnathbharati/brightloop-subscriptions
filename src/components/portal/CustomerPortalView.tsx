@@ -14,6 +14,8 @@ import {
   Sparkles,
   Plus,
   Calendar,
+  LayoutGrid,
+  SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -22,11 +24,13 @@ import { NewSubscriptionView } from './NewSubscriptionView';
 interface CustomerPortalViewProps {
   onPayInvoice?: (invoiceId: string) => void;
   initialTab?: 'subs' | 'invoices' | 'new_subscription';
+  onNavigateToNewSub?: () => void;
 }
 
 export function CustomerPortalView({
   onPayInvoice,
   initialTab = 'subs',
+  onNavigateToNewSub,
 }: CustomerPortalViewProps) {
   const {
     currentUser,
@@ -38,6 +42,7 @@ export function CustomerPortalView({
   } = useBrightloop();
 
   const [activeTab, setActiveTab] = useState<'subs' | 'invoices' | 'new_subscription'>(initialTab);
+  const [layoutMode, setLayoutMode] = useState<'grid' | 'slider'>('grid');
   const sliderRef = useRef<HTMLDivElement>(null);
 
   const scrollSlider = (direction: 'left' | 'right') => {
@@ -61,6 +66,160 @@ export function CustomerPortalView({
     (i) =>
       i.customerId === currentUser.id ||
       i.customerEmail.toLowerCase() === currentUser.email.toLowerCase()
+  );
+
+  // Dedicated New Subscription Enrollment View (Clean single header banner, no duplicate stacked banners)
+  if (activeTab === 'new_subscription') {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto">
+        <NewSubscriptionView onComplete={() => setActiveTab('subs')} />
+      </div>
+    );
+  }
+
+  // Common Subscription Card Renderer for both Grid and Slider views
+  const renderSubscriptionCard = (sub: (typeof subscriptions)[0]) => (
+    <div className="w-full h-full bg-white rounded-2xl border border-[#EAE2D5] hover:border-[#C29367] p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-5">
+      <div className="space-y-4">
+        {/* Top Row: Code & Status Badges */}
+        <div className="flex items-center justify-between pb-3 border-b border-[#EAE2D5]">
+          <span className="font-mono text-xs font-bold text-[#8A5626] bg-[#F7EFE6] px-2.5 py-1 rounded-lg border border-[#E8DACB]">
+            {sub.subscriptionNumber}
+          </span>
+          <div className="flex items-center gap-1.5">
+            <span
+              className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                sub.status === 'ACTIVE'
+                  ? 'bg-[#EFE5D7] text-[#634931] border border-[#DDD0BF]'
+                  : sub.status === 'QUOTATION'
+                  ? 'bg-[#F5EDE1] text-[#7A5B3D] border border-[#E5D7C5]'
+                  : 'bg-[#F2ECE4] text-[#6E6155]'
+              }`}
+            >
+              {sub.isPaused ? 'PAUSED' : sub.status}
+            </span>
+            <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase bg-[#F5EDE1] text-[#7A5B3D] border border-[#E5D7C5]">
+              {sub.billingFrequency}
+            </span>
+          </div>
+        </div>
+
+        {/* Plan Name */}
+        <div>
+          <h3 className="text-lg font-bold text-[#2C2621]">{sub.planName}</h3>
+          {sub.notes && (
+            <p className="text-xs text-[#7A6D61] mt-0.5 line-clamp-2">{sub.notes}</p>
+          )}
+        </div>
+
+        {/* Big Price Box */}
+        <div className="p-3.5 bg-[#FAF7F2] rounded-xl border border-[#EFE7DC] flex items-baseline justify-between">
+          <div>
+            <div className="text-[10px] uppercase font-bold tracking-wider text-[#8C7E72]">
+              Recurring Bill
+            </div>
+            <div className="text-[11px] text-[#7A6D61] mt-0.5">
+              {sub.paymentTerms ? sub.paymentTerms.replace('_', ' ') : 'Immediate'}
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-black text-[#9C6638] font-mono leading-none">
+              {formatCurrency(sub.grandTotal)}
+            </div>
+            <span className="text-[10px] text-[#8C7E72] font-medium">
+              /{sub.billingFrequency.toLowerCase()}
+            </span>
+          </div>
+        </div>
+
+        {/* Timeline / Dates */}
+        <div className="flex items-center justify-between text-xs text-[#7A6D61] px-1">
+          <div className="flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5 text-[#B88457]" />
+            <span>
+              Renews: <span className="font-bold text-[#2C2621]">{formatDate(sub.expiryDate)}</span>
+            </span>
+          </div>
+          <span className="text-[11px]">
+            Started {formatDate(sub.startDate)}
+          </span>
+        </div>
+
+        {/* Software Lines List */}
+        <div className="p-3 bg-[#FAF7F2] border border-[#EFE7DC] rounded-xl space-y-2 text-xs">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-[#8C7E72] mb-1">
+            Licensed Modules:
+          </div>
+          {sub.lines.map((l) => (
+            <div
+              key={l.id}
+              className="flex justify-between items-start py-1 border-b border-[#EAE2D5]/70 last:border-0 last:pb-0"
+            >
+              <div className="pr-2">
+                <span className="font-semibold text-[#2C2621]">
+                  {l.quantity}x {l.productName}
+                </span>
+                {l.variantName && (
+                  <span className="block text-[10px] font-bold text-[#8A5626] mt-0.5">
+                    {l.variantName}
+                  </span>
+                )}
+              </div>
+              <span className="font-mono font-bold text-[#2C2621] shrink-0">
+                {formatCurrency(l.lineTotal)}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Mini Cost Breakdown */}
+        <div className="space-y-1 text-xs px-1 text-[#7A6D61]">
+          <div className="flex justify-between">
+            <span>Subtotal</span>
+            <span className="font-mono text-[#2C2621]">{formatCurrency(sub.subtotal)}</span>
+          </div>
+          {sub.discountTotal > 0 && (
+            <div className="flex justify-between text-emerald-700 font-medium">
+              <span>Discount</span>
+              <span className="font-mono">-{formatCurrency(sub.discountTotal)}</span>
+            </div>
+          )}
+          <div className="flex justify-between">
+            <span>Tax (18%)</span>
+            <span className="font-mono text-[#2C2621]">{formatCurrency(sub.taxTotal)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Action Controls */}
+      <div className="pt-3 border-t border-[#EAE2D5] flex gap-2">
+        {sub.isPaused ? (
+          <button
+            onClick={() => resumeSubscription(sub.id)}
+            className="flex-1 px-3 py-2 bg-gradient-to-r from-[#C29367] to-[#B88457] hover:from-[#B88457] hover:to-[#A76D3B] text-white rounded-xl font-bold flex items-center justify-center gap-1.5 text-xs shadow-sm shadow-[#C29367]/25 transition-all active:scale-95"
+          >
+            <Play className="w-3.5 h-3.5" />
+            <span>Resume</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => pauseSubscription(sub.id)}
+            className="flex-1 px-3 py-2 bg-[#F2ECE4] hover:bg-[#EBE2D8] text-[#5A4D42] rounded-xl font-bold flex items-center justify-center gap-1.5 text-xs transition-colors active:scale-95"
+          >
+            <Pause className="w-3.5 h-3.5" />
+            <span>Pause</span>
+          </button>
+        )}
+
+        <button
+          onClick={() => renewSubscription(sub.id)}
+          className="flex-1 px-3 py-2 bg-[#F5EDE1] hover:bg-[#EFE5D7] text-[#7A4B20] border border-[#E5D7C5] rounded-xl font-bold flex items-center justify-center gap-1.5 text-xs transition-colors active:scale-95"
+        >
+          <RotateCw className="w-3.5 h-3.5" />
+          <span>Renew</span>
+        </button>
+      </div>
+    </div>
   );
 
   return (
@@ -103,43 +262,33 @@ export function CustomerPortalView({
           </div>
         </div>
 
-        {/* Tab switcher */}
-        <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t border-white/10 text-xs">
-          <button
-            onClick={() => setActiveTab('subs')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all ${
-              activeTab === 'subs'
-                ? 'bg-gradient-to-r from-[#C29367] to-[#B88457] text-white shadow-md shadow-[#C29367]/25'
-                : 'text-[#D5CBC0] hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <Repeat className="w-3.5 h-3.5" />
-            <span>My Subscriptions ({mySubscriptions.length})</span>
-          </button>
+        {/* Tab switcher & Action button */}
+        <div className="flex flex-wrap items-center justify-between gap-2 mt-6 pt-4 border-t border-white/10 text-xs">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setActiveTab('subs')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all ${
+                activeTab === 'subs'
+                  ? 'bg-gradient-to-r from-[#C29367] to-[#B88457] text-white shadow-md shadow-[#C29367]/25'
+                  : 'text-[#D5CBC0] hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <Repeat className="w-3.5 h-3.5" />
+              <span>My Subscriptions ({mySubscriptions.length})</span>
+            </button>
 
-          <button
-            onClick={() => setActiveTab('invoices')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all ${
-              activeTab === 'invoices'
-                ? 'bg-gradient-to-r from-[#C29367] to-[#B88457] text-white shadow-md shadow-[#C29367]/25'
-                : 'text-[#D5CBC0] hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <Receipt className="w-3.5 h-3.5" />
-            <span>My Invoices & Receipts ({myInvoices.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('new_subscription')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all ${
-              activeTab === 'new_subscription'
-                ? 'bg-gradient-to-r from-[#C29367] to-[#B88457] text-white shadow-md shadow-[#C29367]/25'
-                : 'text-[#D5CBC0] hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>+ New Subscription</span>
-          </button>
+            <button
+              onClick={() => setActiveTab('invoices')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all ${
+                activeTab === 'invoices'
+                  ? 'bg-gradient-to-r from-[#C29367] to-[#B88457] text-white shadow-md shadow-[#C29367]/25'
+                  : 'text-[#D5CBC0] hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <Receipt className="w-3.5 h-3.5" />
+              <span>My Invoices & Receipts ({myInvoices.length})</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -152,9 +301,40 @@ export function CustomerPortalView({
               <span className="text-xs text-[#7A6D61]">Self-service pause, resume, and renewal controls</span>
             </div>
 
-            <div className="flex items-center gap-2 self-start sm:self-auto">
-              {/* Slider Arrow Controls strictly for contracts area */}
-              {mySubscriptions.length > 1 && (
+            <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+              {/* Dual View Option: Grid (4 in view, scroll vertically) vs Slide View */}
+              <div className="flex items-center p-0.5 bg-white rounded-xl border border-[#EAE2D5] shadow-sm text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setLayoutMode('grid')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                    layoutMode === 'grid'
+                      ? 'bg-gradient-to-r from-[#C29367] to-[#B88457] text-white shadow-sm'
+                      : 'text-[#6D5E51] hover:text-[#2C2621] hover:bg-[#F0E6D8]'
+                  }`}
+                  title="Grid View (4 in view, vertical scroll)"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span>Grid</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setLayoutMode('slider')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                    layoutMode === 'slider'
+                      ? 'bg-gradient-to-r from-[#C29367] to-[#B88457] text-white shadow-sm'
+                      : 'text-[#6D5E51] hover:text-[#2C2621] hover:bg-[#F0E6D8]'
+                  }`}
+                  title="Slide View (Horizontal carousel slider)"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  <span>Slider</span>
+                </button>
+              </div>
+
+              {/* Slider Arrow Controls when Slide View is selected */}
+              {layoutMode === 'slider' && mySubscriptions.length > 1 && (
                 <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-[#EAE2D5] shadow-sm">
                   <button
                     onClick={() => scrollSlider('left')}
@@ -179,7 +359,7 @@ export function CustomerPortalView({
               )}
 
               <button
-                onClick={() => setActiveTab('new_subscription')}
+                onClick={() => (onNavigateToNewSub ? onNavigateToNewSub() : setActiveTab('new_subscription'))}
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-[#C29367] to-[#B88457] hover:from-[#B88457] hover:to-[#A76D3B] text-white rounded-xl text-xs font-bold shadow-sm shadow-[#C29367]/20 transition-all active:scale-95 self-start sm:self-auto"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -202,7 +382,8 @@ export function CustomerPortalView({
                 <span>Add Your First Subscription</span>
               </button>
             </div>
-          ) : (
+          ) : layoutMode === 'slider' ? (
+            /* SLIDE VIEW: Horizontal Carousel with Left/Right Controls */
             <div className="relative w-full overflow-hidden">
               <div
                 ref={sliderRef}
@@ -211,150 +392,21 @@ export function CustomerPortalView({
                 {mySubscriptions.map((sub) => (
                   <div
                     key={sub.id}
-                    className="w-[320px] sm:w-[380px] md:w-[420px] shrink-0 snap-start bg-white rounded-2xl border border-[#EAE2D5] hover:border-[#C29367] p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-5"
+                    className="w-[320px] sm:w-[380px] md:w-[420px] shrink-0 snap-start"
                   >
-                  <div className="space-y-4">
-                    {/* Top Row: Code & Status Badges */}
-                    <div className="flex items-center justify-between pb-3 border-b border-[#EAE2D5]">
-                      <span className="font-mono text-xs font-bold text-[#8A5626] bg-[#F7EFE6] px-2.5 py-1 rounded-lg border border-[#E8DACB]">
-                        {sub.subscriptionNumber}
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                            sub.status === 'ACTIVE'
-                              ? 'bg-[#EFE5D7] text-[#634931] border border-[#DDD0BF]'
-                              : sub.status === 'QUOTATION'
-                              ? 'bg-[#F5EDE1] text-[#7A5B3D] border border-[#E5D7C5]'
-                              : 'bg-[#F2ECE4] text-[#6E6155]'
-                          }`}
-                        >
-                          {sub.isPaused ? 'PAUSED' : sub.status}
-                        </span>
-                        <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase bg-[#F5EDE1] text-[#7A5B3D] border border-[#E5D7C5]">
-                          {sub.billingFrequency}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Plan Name */}
-                    <div>
-                      <h3 className="text-lg font-bold text-[#2C2621]">{sub.planName}</h3>
-                      {sub.notes && (
-                        <p className="text-xs text-[#7A6D61] mt-0.5 line-clamp-2">{sub.notes}</p>
-                      )}
-                    </div>
-
-                    {/* Big Price Box */}
-                    <div className="p-3.5 bg-[#FAF7F2] rounded-xl border border-[#EFE7DC] flex items-baseline justify-between">
-                      <div>
-                        <div className="text-[10px] uppercase font-bold tracking-wider text-[#8C7E72]">
-                          Recurring Bill
-                        </div>
-                        <div className="text-[11px] text-[#7A6D61] mt-0.5">
-                          {sub.paymentTerms ? sub.paymentTerms.replace('_', ' ') : 'Immediate'}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-black text-[#9C6638] font-mono leading-none">
-                          {formatCurrency(sub.grandTotal)}
-                        </div>
-                        <span className="text-[10px] text-[#8C7E72] font-medium">
-                          /{sub.billingFrequency.toLowerCase()}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Timeline / Dates */}
-                    <div className="flex items-center justify-between text-xs text-[#7A6D61] px-1">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-[#B88457]" />
-                        <span>
-                          Renews: <span className="font-bold text-[#2C2621]">{formatDate(sub.expiryDate)}</span>
-                        </span>
-                      </div>
-                      <span className="text-[11px]">
-                        Started {formatDate(sub.startDate)}
-                      </span>
-                    </div>
-
-                    {/* Software Lines List */}
-                    <div className="p-3 bg-[#FAF7F2] border border-[#EFE7DC] rounded-xl space-y-2 text-xs">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#8C7E72] mb-1">
-                        Licensed Modules:
-                      </div>
-                      {sub.lines.map((l) => (
-                        <div
-                          key={l.id}
-                          className="flex justify-between items-start py-1 border-b border-[#EAE2D5]/70 last:border-0 last:pb-0"
-                        >
-                          <div className="pr-2">
-                            <span className="font-semibold text-[#2C2621]">
-                              {l.quantity}x {l.productName}
-                            </span>
-                            {l.variantName && (
-                              <span className="block text-[10px] font-bold text-[#8A5626] mt-0.5">
-                                {l.variantName}
-                              </span>
-                            )}
-                          </div>
-                          <span className="font-mono font-bold text-[#2C2621] shrink-0">
-                            {formatCurrency(l.lineTotal)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Mini Cost Breakdown */}
-                    <div className="space-y-1 text-xs px-1 text-[#7A6D61]">
-                      <div className="flex justify-between">
-                        <span>Subtotal</span>
-                        <span className="font-mono text-[#2C2621]">{formatCurrency(sub.subtotal)}</span>
-                      </div>
-                      {sub.discountTotal > 0 && (
-                        <div className="flex justify-between text-emerald-700 font-medium">
-                          <span>Discount</span>
-                          <span className="font-mono">-{formatCurrency(sub.discountTotal)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between">
-                        <span>Tax (18%)</span>
-                        <span className="font-mono text-[#2C2621]">{formatCurrency(sub.taxTotal)}</span>
-                      </div>
-                    </div>
+                    {renderSubscriptionCard(sub)}
                   </div>
-
-                  {/* Bottom Action Controls */}
-                  <div className="pt-3 border-t border-[#EAE2D5] flex gap-2">
-                    {sub.isPaused ? (
-                      <button
-                        onClick={() => resumeSubscription(sub.id)}
-                        className="flex-1 px-3 py-2 bg-gradient-to-r from-[#C29367] to-[#B88457] hover:from-[#B88457] hover:to-[#A76D3B] text-white rounded-xl font-bold flex items-center justify-center gap-1.5 text-xs shadow-sm shadow-[#C29367]/25 transition-all active:scale-95"
-                      >
-                        <Play className="w-3.5 h-3.5" />
-                        <span>Resume</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => pauseSubscription(sub.id)}
-                        className="flex-1 px-3 py-2 bg-[#F2ECE4] hover:bg-[#EBE2D8] text-[#5A4D42] rounded-xl font-bold flex items-center justify-center gap-1.5 text-xs transition-colors active:scale-95"
-                      >
-                        <Pause className="w-3.5 h-3.5" />
-                        <span>Pause</span>
-                      </button>
-                    )}
-
-                    <button
-                      onClick={() => renewSubscription(sub.id)}
-                      className="flex-1 px-3 py-2 bg-[#F5EDE1] hover:bg-[#EFE5D7] text-[#7A4B20] border border-[#E5D7C5] rounded-xl font-bold flex items-center justify-center gap-1.5 text-xs transition-colors active:scale-95"
-                    >
-                      <RotateCw className="w-3.5 h-3.5" />
-                      <span>Renew</span>
-                    </button>
-                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* GRID VIEW: 2x2 Clean Layout with Natural Vertical Scroll */
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pb-6">
+              {mySubscriptions.map((sub) => (
+                <div key={sub.id} className="w-full">
+                  {renderSubscriptionCard(sub)}
                 </div>
               ))}
-              </div>
             </div>
           )}
         </div>
@@ -447,11 +499,6 @@ export function CustomerPortalView({
             </table>
           </div>
         </div>
-      )}
-
-      {/* View 3: Add New Subscription */}
-      {activeTab === 'new_subscription' && (
-        <NewSubscriptionView onComplete={() => setActiveTab('subs')} />
       )}
     </div>
   );

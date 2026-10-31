@@ -18,8 +18,8 @@ export default function ProductsPage() {
     salesPrice: '',
     costPrice: '',
     notes: '',
-    variantName: 'Brand: Odoo Enterprise Edition',
-    variantPrice: '560',
+    variantName: 'Brand: Enterprise White-label',
+    variantPrice: '850',
   });
 
   // New Plan Form State
@@ -133,7 +133,7 @@ export default function ProductsPage() {
             Products & Subscription Plans
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Configure catalog items, brand variants (+560 Odoo variant), and recurring billing cycles.
+            Configure catalog items, brand variants, and recurring billing cycles.
           </p>
         </div>
 
@@ -304,7 +304,7 @@ export default function ProductsPage() {
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     type="text"
-                    placeholder="e.g. Brand: Odoo"
+                    placeholder="e.g. Brand: Enterprise"
                     value={productForm.variantName}
                     onChange={(e) =>
                       setProductForm({ ...productForm, variantName: e.target.value })
@@ -313,7 +313,7 @@ export default function ProductsPage() {
                   />
                   <input
                     type="number"
-                    placeholder="Adjustment (+560)"
+                    placeholder="Price Adjustment (+850)"
                     value={productForm.variantPrice}
                     onChange={(e) =>
                       setProductForm({ ...productForm, variantPrice: e.target.value })

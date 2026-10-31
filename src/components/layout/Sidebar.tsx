@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useBrightloop } from '@/lib/store';
 import { BrightloopLogo } from '@/components/ui/BrightloopLogo';
+import { SettingsModal } from './SettingsModal';
 import {
   LayoutDashboard,
   Repeat,
@@ -21,6 +22,7 @@ import {
   Shield,
   Briefcase,
   PlusCircle,
+  Settings,
 } from 'lucide-react';
 
 export type ActiveTab =
@@ -44,6 +46,19 @@ interface SidebarProps {
 
 export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   const { currentUser, isAdmin, isCustomer, logout, runBillingDay } = useBrightloop();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isExecutingBilling, setIsExecutingBilling] = useState(false);
+
+  const handleBillingRun = () => {
+    setIsExecutingBilling(true);
+    try {
+      runBillingDay();
+    } finally {
+      setTimeout(() => {
+        setIsExecutingBilling(false);
+      }, 700);
+    }
+  };
 
   // Navigation Items
   const navItems = [
@@ -76,7 +91,6 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       id: 'products' as ActiveTab,
       label: 'Products & Variants',
       icon: Package,
-      badge: '+560 Odoo',
       hidden: isCustomer,
     },
     {
@@ -107,7 +121,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       adminOnly: true,
       hidden: isCustomer,
     },
-    // Customer Portal
+    // Customer Portal & Enrollment
     {
       id: 'portal' as ActiveTab,
       label: 'Customer Self-Portal',
@@ -119,20 +133,19 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       label: 'New Subscription',
       icon: PlusCircle,
       badge: 'Subscribe',
+      hidden: !isCustomer,
     },
-    // Auth & Quality Validator (Admin only - hidden from Customer Portal)
+    // Auth & Quality Validator hidden from operational sidebar (moved to testing harness)
     {
       id: 'auth_validator' as ActiveTab,
       label: 'Auth & Rule Validator',
       icon: KeyRound,
-      badge: 'Edge-Cases',
-      adminOnly: true,
-      hidden: isCustomer,
+      hidden: true,
     },
   ];
 
   return (
-    <aside className="w-64 border-r border-[#EAE2D5] bg-[#FAF7F2] h-screen sticky top-0 flex flex-col justify-between p-4 shrink-0 transition-colors duration-200 text-[#2C2621] overflow-hidden no-scrollbar select-none">
+    <aside className="w-64 border-r border-[#EAE2D5] bg-[#FAF7F2] h-screen sticky top-0 flex flex-col justify-between p-4 shrink-0 transition-colors duration-200 text-[#2C2621] overflow-visible select-none relative">
       <div className="space-y-4">
         {/* Brand Monogram & Header */}
         <div className="pb-3 border-b border-[#EAE2D5] px-1">
@@ -215,40 +228,55 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
 
       {/* Footer Info & Quick Utilities */}
       <div className="pt-4 border-t border-[#EAE2D5] space-y-3">
-        {/* Quick Billing Cycle Run */}
-        <button
-          onClick={() => runBillingDay()}
-          className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-[#F3EBE0] hover:bg-[#EBE1D4] text-[#4A3C30] border border-[#DFD3C3] rounded-xl text-xs font-semibold shadow-sm transition-all active:scale-95"
-          title="Execute automated billing cycle run"
-        >
-          <Zap className="w-3.5 h-3.5 text-[#B88457] fill-current" />
-          <span>Execute Billing Run</span>
-        </button>
+        {/* Quick Billing Cycle Run (Hidden for Customer, Admin/Staff only) */}
+        {!isCustomer && (
+          <button
+            onClick={handleBillingRun}
+            disabled={isExecutingBilling}
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-[#F3EBE0] hover:bg-[#EBE1D4] active:bg-[#E2D6C5] text-[#4A3C30] border border-[#DFD3C3] rounded-xl text-xs font-semibold shadow-sm transition-all active:scale-95 disabled:opacity-75"
+            title="Execute automated billing cycle run"
+          >
+            <Zap className={`w-3.5 h-3.5 text-[#B88457] fill-current ${isExecutingBilling ? 'animate-bounce text-[#8F5927]' : ''}`} />
+            <span>{isExecutingBilling ? 'Executing Billing Run...' : 'Execute Billing Run'}</span>
+          </button>
+        )}
 
-        {/* User Identity & Sign Out */}
+        {/* User Identity & Enterprise Settings (Outside Logout Button Removed) */}
         <div className="flex items-center justify-between p-2 rounded-xl bg-[#F5EDE1] border border-[#E5D7C5]">
-          <div className="flex items-center gap-2 overflow-hidden">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#C29367] to-[#B88457] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+          <div
+            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+            className="flex items-center gap-2 overflow-hidden cursor-pointer group flex-1 mr-1"
+            title="Open Account & Settings"
+          >
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#C29367] to-[#B88457] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm group-hover:scale-105 transition-transform">
               {currentUser.name
                 .split(' ')
                 .map((n) => n[0])
                 .join('')}
             </div>
             <div className="text-left text-xs truncate leading-tight">
-              <div className="font-bold text-[#2C2621] truncate">{currentUser.name}</div>
+              <div className="font-bold text-[#2C2621] truncate group-hover:text-[#B88457] transition-colors">
+                {currentUser.name}
+              </div>
               <div className="text-[#7A6C60] text-[10px] truncate">{currentUser.email}</div>
             </div>
           </div>
 
           <button
-            onClick={logout}
-            className="p-1.5 rounded-lg text-[#8C3A32] hover:bg-[#F2DFDD] transition-colors shrink-0"
-            title="Sign out and return to the login screen"
+            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+            className="p-1.5 rounded-lg text-[#6A5E53] hover:text-[#2C2621] hover:bg-[#EAE0D1] transition-colors shrink-0"
+            title="Account & Settings"
           >
-            <LogOut className="w-3.5 h-3.5" />
+            <Settings className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
+
+      {/* Enterprise Account & Customer Profile Settings Flyout */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </aside>
   );
 }

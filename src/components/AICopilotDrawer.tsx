@@ -57,7 +57,7 @@ export default function AICopilotDrawer() {
       answer: `🎯 **Customer Risk Assessment:**
 • 🔴 **CloudPulse Tech (Health: 58/100 - Critical):** Unpaid annual renewal ($14,750). Auto-renew mandate pending confirmation.
 • 🟡 **Green Logistics (Health: 76/100 - Moderate):** Quotation SUB-2026-0003 pending sign-off for 15 days.
-• 🟢 **Nexus Retail (Health: 94/100 - Exemplary):** $8,491 paid on-time with Odoo Brand Edition.
+• 🟢 **Nexus Retail (Health: 94/100 - Exemplary):** $8,491 paid on-time with Enterprise White-label Edition.
 
 ⚡ **Suggested Action:** Send a 10% early-settlement incentive to CloudPulse Tech to recover cashflow immediately.`,
     },
@@ -125,8 +125,8 @@ Brightloop Software HQ`,
 
       if (matched) {
         aiResponseText = matched.answer;
-      } else if (userQuery.toLowerCase().includes('odoo')) {
-        aiResponseText = `🏢 **Odoo Brand Integration Overview:**\nChoosing the "Brand: Odoo Enterprise Edition" dynamically adds a **+$560.00 price delta** per seat to baseline software pricing. This has contributed **+$1,120.00 in Expansion MRR** this quarter!`;
+      } else if (userQuery.toLowerCase().includes('odoo') || userQuery.toLowerCase().includes('enterprise')) {
+        aiResponseText = `🏢 **Enterprise Integration Overview:**\nChoosing the "Brand: Enterprise White-label Edition" dynamically adds a **+$850.00 price delta** per seat to baseline software pricing. This has contributed **+$1,700.00 in Expansion MRR** this quarter!`;
       } else if (userQuery.toLowerCase().includes('billing') || userQuery.toLowerCase().includes('run')) {
         aiResponseText = `⚡ **Billing Engine Status:**\nThe automated billing engine operates with **strict idempotency safeguards**. No subscription can be billed twice within the same cycle period. Click "⚡ Run Billing Day" in the top bar to trigger the automated batch.`;
       } else {

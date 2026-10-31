@@ -30,7 +30,7 @@ export default function SmartRevenueWaterfall() {
       label: '+ Expansion MRR',
       amount: '+$1,120',
       type: 'positive',
-      detail: 'Odoo Brand Edition (+ $560/seat delta)',
+      detail: 'Enterprise White-label Edition (+ $850/seat delta)',
       color: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
     },
     {
@@ -66,7 +66,7 @@ export default function SmartRevenueWaterfall() {
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Enterprise expansion attribution, Odoo brand variant delta, and net retention breakdown.
+            Enterprise expansion attribution, platform variant delta, and net retention breakdown.
           </p>
         </div>
 
@@ -122,7 +122,7 @@ export default function SmartRevenueWaterfall() {
           <div className="text-lg font-bold text-white mt-1">$24,840</div>
           <div className="text-[11px] text-purple-400 flex items-center gap-1 mt-1">
             <Sparkles className="w-3 h-3" />
-            Includes +$1,120 Odoo Brand Delta
+            Includes +$1,120 Enterprise Edition Delta
           </div>
         </div>
 

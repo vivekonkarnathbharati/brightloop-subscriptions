@@ -188,7 +188,6 @@ export function NewSubscriptionView({ onComplete }: NewSubscriptionViewProps) {
 
     setIsSubmitting(false);
     setIsSuccess(true);
-    addNotification(`Subscription ${created.subscriptionNumber} activated successfully!`, 'success');
 
     // Return to portal after short visual confirmation
     setTimeout(() => {
@@ -339,7 +338,7 @@ export function NewSubscriptionView({ onComplete }: NewSubscriptionViewProps) {
                     Select Variant / Integration
                   </label>
                   <span className="text-[11px] text-[#A36E43] font-medium">
-                    Includes Odoo Connector (+ $560)
+                    Enterprise Integration Add-ons
                   </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
