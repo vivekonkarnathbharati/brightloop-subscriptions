@@ -103,6 +103,52 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
           </Link>
         </div>
 
+        {/* Quick Role Portal Switcher */}
+        <div className="hidden lg:flex items-center bg-slate-950/80 p-1 rounded-xl border border-slate-800 text-xs">
+          <button
+            onClick={() => {
+              setRole('ADMIN');
+              localStorage.setItem('brightloop_role', 'ADMIN');
+              router.push('/');
+            }}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
+              role === 'ADMIN'
+                ? 'bg-purple-600 text-white font-semibold shadow'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span>👑</span> Admin
+          </button>
+          <button
+            onClick={() => {
+              setRole('STAFF');
+              localStorage.setItem('brightloop_role', 'STAFF');
+              router.push('/subscriptions');
+            }}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
+              role === 'STAFF'
+                ? 'bg-indigo-600 text-white font-semibold shadow'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span>💼</span> Internal Staff
+          </button>
+          <button
+            onClick={() => {
+              setRole('CUSTOMER');
+              localStorage.setItem('brightloop_role', 'CUSTOMER');
+              router.push('/portal');
+            }}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
+              role === 'CUSTOMER'
+                ? 'bg-emerald-600 text-white font-semibold shadow'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span>👤</span> Customer ID
+          </button>
+        </div>
+
         {/* Global Action & Profile Bar */}
         <div className="flex items-center gap-4">
           {notification && (

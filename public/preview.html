@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brightloop — Subscription & Recurring Billing ERP (Odoo Hackathon 2026)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              950: '#030712',
+              900: '#0b0f19',
+              850: '#111827',
+              800: '#1f2937',
+              700: '#374151',
+            },
+            purple: {
+              500: '#a855f7',
+              600: '#9333ea',
+              700: '#7e22ce',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card-hover:hover {
+      border-color: rgba(168, 85, 247, 0.4);
+      transform: translateY(-2px);
+      transition: all 0.2s ease-in-out;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b0f19;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #9333ea;
+    }
+    .pulse-glow {
+      box-shadow: 0 0 25px rgba(168, 85, 247, 0.35);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-purple-600 selection:text-white">
+
+  <!-- ================= TOP NAVIGATION BAR ================= -->
+  <header class="h-16 border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40 px-4 sm:px-6 flex items-center justify-between">
+    <!-- Brand Logo -->
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center font-extrabold text-white shadow-lg shadow-purple-500/25">
+        BL
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-lg tracking-tight text-white">Brightloop</span>
+          <span class="text-[11px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full font-semibold">
+            Odoo ERP Edition
+          </span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">Enterprise Subscription & Automated Recurring Engine</p>
+      </div>
+    </div>
+
+    <!-- Portal Mode Switcher (Admin vs Customer) -->
+    <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shadow-inner">
+      <button id="btnAdminView" onclick="switchView('admin')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 bg-purple-600 text-white shadow-md">
+        <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+        <span>Admin ERP</span>
+      </button>
+      <button id="btnCustomerView" onclick="switchView('customer')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition flex items-center gap-1.5">
+        <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+        <span>Customer Portal</span>
+      </button>
+    </div>
+
+    <!-- Action Buttons & Status -->
+    <div class="flex items-center gap-3">
+      <button onclick="triggerBillingRun()" id="billingRunBtn" class="text-xs font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-lg shadow-purple-600/20 transition active:scale-95">
+        <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-300"></i>
+        <span class="hidden md:inline">⚡ Run Billing Day</span>
+        <span class="md:hidden">Run</span>
+      </button>
+
+      <div class="hidden sm:flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700/60 text-xs">
+        <div class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></div>
+        <span class="text-slate-300 font-medium">Local Live</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= NOTIFICATION TOAST ================= -->
+  <div id="toastNotification" class="fixed top-20 right-6 z-50 transform translate-y-[-100px] opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="bg-slate-900 border border-purple-500/50 p-4 rounded-2xl shadow-2xl flex items-center gap-3 max-w-md backdrop-blur">
+      <div id="toastIcon" class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+        <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <h4 id="toastTitle" class="text-xs font-bold text-white uppercase tracking-wider">System Action</h4>
+        <p id="toastMessage" class="text-xs text-slate-300 mt-0.5">Notification description here</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MAIN LAYOUT ================= -->
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- SIDEBAR -->
+    <aside class="w-64 border-r border-slate-800/80 bg-slate-900/40 p-4 flex flex-col justify-between hidden lg:flex shrink-0">
+      <div class="space-y-6">
+        <div>
+          <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 mb-2">Core ERP Modules</div>
+          <nav class="space-y-1">
+            <a href="#admin-overview" onclick="switchView('admin')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium bg-purple-600/15 text-purple-300 border border-purple-500/30">
+              <i data-lucide="layout-dashboard" class="w-4 h-4 text-purple-400"></i>
+              <span>Dashboard & KPIs</span>
+            </a>
+            <a href="#section-waterfall" onclick="switchView('admin')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition">
+              <i data-lucide="layers" class="w-4 h-4 text-emerald-400"></i>
+              <span>Smart Revenue Analytics</span>
+            </a>
+            <a href="#section-radar" onclick="switchView('admin')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition">
+              <i data-lucide="shield-alert" class="w-4 h-4 text-rose-400"></i>
+              <span>Customer Risk Radar</span>
+            </a>
+            <a href="#section-subscriptions" onclick="switchView('admin')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition">
+              <i data-lucide="repeat" class="w-4 h-4 text-indigo-400"></i>
+              <span>Active Subscriptions</span>
+            </a>
+            <a href="#section-invoices" onclick="switchView('admin')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition">
+              <i data-lucide="receipt" class="w-4 h-4 text-amber-400"></i>
+              <span>Invoices & Payments</span>
+            </a>
+          </nav>
+        </div>
+
+        <div>
+          <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 mb-2">Customer Facing</div>
+          <nav class="space-y-1">
+            <button onclick="switchView('customer')" class="w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition">
+              <i data-lucide="user-check" class="w-4 h-4 text-cyan-400"></i>
+              <span>Client Self-Portal</span>
+            </button>
+          </nav>
+        </div>
+
+        <!-- 3 Highlight Features Callout -->
+        <div class="p-3.5 rounded-2xl bg-gradient-to-br from-purple-950/40 to-slate-900 border border-purple-500/30 space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
+            <span class="text-[11px] font-bold text-purple-300 uppercase tracking-wider">3 Big Features</span>
+          </div>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            1. 🤖 <b>AI Business Copilot</b><br>
+            2. 📈 <b>Smart Revenue Waterfall</b><br>
+            3. 🛡️ <b>Customer Risk Radar</b>
+          </p>
+          <button onclick="toggleCopilot()" class="w-full mt-2 text-[11px] bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 border border-purple-500/40 font-semibold py-1.5 rounded-lg transition flex items-center justify-center gap-1.5">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            Launch AI Assistant
+          </button>
+        </div>
+      </div>
+
+      <!-- User Profile Badge -->
+      <div class="pt-4 border-t border-slate-800/80">
+        <div class="flex items-center gap-3 p-2 bg-slate-950/60 rounded-xl border border-slate-800">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs">
+            AD
+          </div>
+          <div class="overflow-hidden">
+            <div class="text-xs font-bold text-slate-200 truncate">HQ Admin</div>
+            <div class="text-[10px] text-slate-400">admin@brightloop.io</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CONTENT SCROLLER -->
+    <main class="flex-1 p-4 sm:p-8 overflow-y-auto max-w-7xl mx-auto w-full space-y-8">
+
+      <!-- ======================================================== -->
+      <!-- ================= VIEW 1: ADMIN ERP VIEW =============== -->
+      <!-- ======================================================== -->
+      <div id="adminViewContainer" class="space-y-8">
+
+        <!-- Page Header -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-xs font-bold text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                Enterprise Dashboard
+              </span>
+              <span class="text-xs text-slate-500">•</span>
+              <span class="text-xs text-slate-400">Odoo Hackathon 2026</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              Finance & Subscription Command Center
+            </h1>
+            <p class="text-sm text-slate-400 mt-1">
+              Live recurring revenue, automated billing runs, and autonomous customer churn intelligence.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button onclick="toggleCopilot()" class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-lg shadow-purple-600/25 flex items-center gap-2 transition active:scale-95">
+              <i data-lucide="sparkles" class="w-4 h-4 text-purple-200"></i>
+              <span>Ask AI Copilot</span>
+            </button>
+            <button onclick="switchView('customer')" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-2 transition">
+              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+              <span>Open Customer Portal</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI Summary Cards (4 Columns) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- KPI 1: MRR -->
+          <div class="glass-card glass-card-hover p-5 rounded-2xl relative overflow-hidden">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+              <span class="text-xs font-semibold uppercase tracking-wider">Monthly Recurring (MRR)</span>
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="text-3xl font-extrabold text-white tracking-tight">
+              $10,221
+            </div>
+            <div class="text-xs text-emerald-400 flex items-center gap-1 mt-2 font-medium">
+              <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
+              <span>+14.2% MoM growth</span>
+            </div>
+          </div>
+
+          <!-- KPI 2: ARR -->
+          <div class="glass-card glass-card-hover p-5 rounded-2xl relative overflow-hidden">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+              <span class="text-xs font-semibold uppercase tracking-wider">Annual Run Rate (ARR)</span>
+              <div class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
+                <i data-lucide="trending-up" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="text-3xl font-extrabold text-white tracking-tight">
+              $122,649
+            </div>
+            <div class="text-xs text-slate-400 mt-2">
+              Based on active Enterprise subscriptions
+            </div>
+          </div>
+
+          <!-- KPI 3: Active Subscriptions -->
+          <div class="glass-card glass-card-hover p-5 rounded-2xl relative overflow-hidden">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+              <span class="text-xs font-semibold uppercase tracking-wider">Active Contracts</span>
+              <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+                <i data-lucide="repeat" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="text-3xl font-extrabold text-white tracking-tight">
+              3 <span class="text-sm font-normal text-slate-400">Enterprises</span>
+            </div>
+            <div class="text-xs text-indigo-300 mt-2 flex items-center gap-1">
+              <i data-lucide="clock" class="w-3 h-3"></i>
+              <span>1 Quotation pending sign-off</span>
+            </div>
+          </div>
+
+          <!-- KPI 4: Overdue & DSO -->
+          <div class="glass-card glass-card-hover p-5 rounded-2xl relative overflow-hidden border-rose-500/30">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+              <span class="text-xs font-semibold uppercase tracking-wider text-rose-300">Overdue Receivables</span>
+              <div class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
+                <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="text-3xl font-extrabold text-rose-300 tracking-tight">
+              $14,750
+            </div>
+            <div class="text-xs text-rose-400 mt-2 font-medium flex items-center gap-1">
+              <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+              <span>1 invoice past due (CloudPulse Tech)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======================================================= -->
+        <!-- FEATURE 1: SMART REVENUE ANALYTICS (MRR WATERFALL) ===== -->
+        <!-- ======================================================= -->
+        <section id="section-waterfall" class="glass-card rounded-2xl p-6 space-y-6 border-purple-500/30">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                  <i data-lucide="layers" class="w-4 h-4"></i>
+                </span>
+                <h2 class="text-lg font-bold text-white tracking-tight">
+                  1. Smart Revenue Analytics (MRR Waterfall Engine)
+                </h2>
+                <span class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
+                  Feature Added ✓
+                </span>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">
+                Decomposes monthly recurring revenue into baseline, new enterprise deals, Odoo Brand expansion, and churn.
+              </p>
+            </div>
+
+            <!-- Health Badge -->
+            <div class="flex items-center gap-3 bg-slate-950/80 border border-slate-800 px-4 py-2 rounded-xl">
+              <div>
+                <div class="text-[10px] uppercase font-semibold text-slate-400">Days Sales Outstanding (DSO)</div>
+                <div class="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
+                  <i data-lucide="shield-check" class="w-4 h-4"></i>
+                  <span>14 Days (Excellent &lt; 30)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Waterfall Columns Flow -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-2">
+            <!-- Step 1: Starting MRR -->
+            <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-xl flex flex-col justify-between">
+              <div>
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Starting MRR</span>
+                <div class="text-xl font-bold text-white mt-1">$6,500</div>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-3 pt-2 border-t border-slate-800/80">
+                Carryover from September
+              </div>
+            </div>
+
+            <!-- Step 2: New MRR -->
+            <div class="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] font-semibold uppercase tracking-wider text-emerald-400">+ New MRR</span>
+                  <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-emerald-400"></i>
+                </div>
+                <div class="text-xl font-bold text-emerald-300 mt-1">+$4,800</div>
+              </div>
+              <div class="text-[11px] text-emerald-400/80 mt-3 pt-2 border-t border-emerald-500/20">
+                2 New contract signups
+              </div>
+            </div>
+
+            <!-- Step 3: Expansion MRR -->
+            <div class="bg-purple-500/10 border border-purple-500/20 p-4 rounded-xl flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] font-semibold uppercase tracking-wider text-purple-400">+ Expansion MRR</span>
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5 text-purple-400"></i>
+                </div>
+                <div class="text-xl font-bold text-purple-300 mt-1">+$1,120</div>
+              </div>
+              <div class="text-[11px] text-purple-300/80 mt-3 pt-2 border-t border-purple-500/20">
+                Odoo Brand (+ $560/seat delta)
+              </div>
+            </div>
+
+            <!-- Step 4: Churn & Contraction -->
+            <div class="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl flex flex-col justify-between">
+              <div>
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-blue-400">- Churn / Downgrade</span>
+                <div class="text-xl font-bold text-blue-300 mt-1">$0.00</div>
+              </div>
+              <div class="text-[11px] text-blue-300/80 mt-3 pt-2 border-t border-blue-500/20">
+                Zero churn this cycle
+              </div>
+            </div>
+
+            <!-- Step 5: Net Current MRR -->
+            <div class="bg-gradient-to-r from-purple-600/20 to-indigo-600/20 border border-purple-500/40 p-4 rounded-xl flex flex-col justify-between shadow-lg">
+              <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-purple-300">= Net Current MRR</span>
+                <div class="text-2xl font-extrabold text-white mt-1">$12,420</div>
+              </div>
+              <div class="text-[11px] text-purple-200 mt-3 pt-2 border-t border-purple-500/30 font-semibold">
+                +18.4% Net MoM Run Rate
+              </div>
+            </div>
+          </div>
+
+          <!-- Revenue Trend Chart -->
+          <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold text-slate-300">6-Month Recurring Revenue Trajectory</span>
+              <span class="text-[11px] text-purple-400 font-medium">Auto-Projected with AI</span>
+            </div>
+            <div class="h-52 w-full">
+              <canvas id="mrrChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================================= -->
+        <!-- FEATURE 2: CUSTOMER RISK & CHURN RADAR =============== -->
+        <!-- ======================================================= -->
+        <section id="section-radar" class="glass-card rounded-2xl p-6 space-y-6 border-rose-500/30">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                  <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                </span>
+                <h2 class="text-lg font-bold text-white tracking-tight">
+                  2. Customer Risk & Churn Radar
+                </h2>
+                <span class="text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full font-bold">
+                  Feature Added ✓
+                </span>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">
+                Real-time health scoring algorithm detects payment delays, contract expiry, and suggests autonomous mitigation protocols.
+              </p>
+            </div>
+
+            <div class="flex items-center gap-2 text-xs">
+              <span class="flex items-center gap-1 text-emerald-400 font-medium"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Healthy: 1</span>
+              <span class="text-slate-600">|</span>
+              <span class="flex items-center gap-1 text-amber-400 font-medium"><i data-lucide="clock" class="w-3.5 h-3.5"></i> Moderate: 1</span>
+              <span class="text-slate-600">|</span>
+              <span class="flex items-center gap-1 text-rose-400 font-medium"><i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Critical Risk: 1</span>
+            </div>
+          </div>
+
+          <!-- Customer Cards Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Customer 1: Nexus Retail (Healthy) -->
+            <div class="bg-slate-900/80 border border-emerald-500/20 p-5 rounded-xl space-y-3 relative">
+              <div class="flex items-start justify-between">
+                <div>
+                  <h4 class="text-sm font-bold text-white">Nexus Retail Enterprises</h4>
+                  <p class="text-xs text-slate-400 mt-0.5">Rajesh Sharma • Mumbai, IN</p>
+                </div>
+                <div class="text-right">
+                  <div class="text-lg font-extrabold text-emerald-400">94<span class="text-xs text-slate-500">/100</span></div>
+                  <span class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">HEALTHY</span>
+                </div>
+              </div>
+              <p class="text-xs text-slate-300">
+                Payer rating exemplary. Paid $8,491.60 on-time via HDFC Bank Transfer. Subscribed to Odoo Brand Edition.
+              </p>
+              <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
+                <span class="text-slate-400">Monthly Contract:</span>
+                <span class="font-bold text-slate-200">$8,491 / mo</span>
+              </div>
+              <button onclick="showToast('Loyalty Upgrade Triggered', 'Nexus Retail qualifies for 1-click annual discount renewal.', 'check-circle-2')" class="w-full mt-2 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 py-1.5 rounded-lg border border-slate-700 transition">
+                Loyalty Upgrade
+              </button>
+            </div>
+
+            <!-- Customer 2: CloudPulse Tech (CRITICAL RISK) -->
+            <div class="bg-slate-900/80 border border-rose-500/50 p-5 rounded-xl space-y-3 relative pulse-glow">
+              <div class="flex items-start justify-between">
+                <div>
+                  <h4 class="text-sm font-bold text-white flex items-center gap-1.5">
+                    CloudPulse Technologies
+                    <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                  </h4>
+                  <p class="text-xs text-slate-400 mt-0.5">Ananya Desai • Bengaluru, IN</p>
+                </div>
+                <div class="text-right">
+                  <div class="text-lg font-extrabold text-rose-400">58<span class="text-xs text-slate-500">/100</span></div>
+                  <span class="text-[10px] font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-full">CRITICAL RISK</span>
+                </div>
+              </div>
+              <p class="text-xs text-rose-200/90 font-medium">
+                ⚠️ Invoice INV-2026-0002 overdue by 16 days ($14,750). Auto-renew mandate pending confirmation.
+              </p>
+              <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
+                <span class="text-slate-400">At-Risk Exposure:</span>
+                <span class="font-bold text-rose-400">$14,750.00</span>
+              </div>
+              <!-- Action Button -->
+              <button onclick="triggerMitigation('CloudPulse Technologies Pvt Ltd')" class="w-full mt-2 text-xs bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold py-2 rounded-lg shadow-lg shadow-rose-600/30 flex items-center justify-center gap-1.5 transition active:scale-95">
+                <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-200"></i>
+                <span>⚡ Trigger Smart Dunning & 10% Settlement</span>
+              </button>
+            </div>
+
+            <!-- Customer 3: Green Logistics (Moderate) -->
+            <div class="bg-slate-900/80 border border-amber-500/20 p-5 rounded-xl space-y-3 relative">
+              <div class="flex items-start justify-between">
+                <div>
+                  <h4 class="text-sm font-bold text-white">Green Logistics Express</h4>
+                  <p class="text-xs text-slate-400 mt-0.5">Vikram Mehta • Delhi, IN</p>
+                </div>
+                <div class="text-right">
+                  <div class="text-lg font-extrabold text-amber-400">76<span class="text-xs text-slate-500">/100</span></div>
+                  <span class="text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">MODERATE</span>
+                </div>
+              </div>
+              <p class="text-xs text-slate-300">
+                Quotation SUB-2026-0003 pending sign-off on 15-day validity window ($10,478.40).
+              </p>
+              <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
+                <span class="text-slate-400">Pipeline Value:</span>
+                <span class="font-bold text-amber-300">$10,478 pipeline</span>
+              </div>
+              <button onclick="showToast('Quote Accelerated', 'Sent 1-click confirmation SMS to Vikram Mehta.', 'zap')" class="w-full mt-2 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 py-1.5 rounded-lg border border-slate-700 transition">
+                Accelerate Quote
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================================= -->
+        <!-- CORE ERP: ACTIVE SUBSCRIPTIONS & INVOICES ============= -->
+        <!-- ======================================================= -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          <!-- Subscriptions Table -->
+          <div id="section-subscriptions" class="glass-card rounded-2xl p-5 space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i data-lucide="repeat" class="w-4 h-4 text-purple-400"></i>
+                Active Subscriptions & Quotes
+              </h3>
+              <span class="text-xs text-slate-400">3 Total</span>
+            </div>
+
+            <div class="divide-y divide-slate-800/80">
+              <!-- Sub 1 -->
+              <div class="py-3 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-slate-200">Nexus Retail Enterprises</div>
+                  <div class="text-[11px] text-slate-400">SUB-2026-0001 • Enterprise Growth Monthly</div>
+                </div>
+                <div class="text-right">
+                  <span class="text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                    ACTIVE
+                  </span>
+                  <div class="text-xs font-bold text-slate-300 mt-1">$6,985.60/mo</div>
+                </div>
+              </div>
+
+              <!-- Sub 2 -->
+              <div class="py-3 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-slate-200">CloudPulse Technologies Pvt Ltd</div>
+                  <div class="text-[11px] text-slate-400">SUB-2026-0002 • Corporate Scale Yearly</div>
+                </div>
+                <div class="text-right">
+                  <span class="text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                    ACTIVE
+                  </span>
+                  <div class="text-xs font-bold text-slate-300 mt-1">$14,750/yr</div>
+                </div>
+              </div>
+
+              <!-- Sub 3 -->
+              <div class="py-3 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-slate-200">Green Logistics Express</div>
+                  <div class="text-[11px] text-slate-400">SUB-2026-0003 • Enterprise Growth Monthly</div>
+                </div>
+                <div class="text-right">
+                  <span class="text-[10px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full">
+                    QUOTATION
+                  </span>
+                  <div class="text-xs font-bold text-indigo-300 mt-1">$10,478.40</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Invoices Table -->
+          <div id="section-invoices" class="glass-card rounded-2xl p-5 space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i data-lucide="receipt" class="w-4 h-4 text-amber-400"></i>
+                Recent Invoices & Cashflow
+              </h3>
+              <span class="text-xs text-slate-400">2 Invoices</span>
+            </div>
+
+            <div class="divide-y divide-slate-800/80">
+              <!-- Invoice 1 (Paid) -->
+              <div class="py-3 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-slate-200">INV-2026-0001 (Nexus Retail)</div>
+                  <div class="text-[11px] text-slate-400">Oct 01, 2026 • HDFC IMPS Ref: 429188402194</div>
+                </div>
+                <div class="text-right">
+                  <span class="text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                    PAID ($8,491.60)
+                  </span>
+                  <div class="text-[10px] text-emerald-400 mt-1">Settled on-time</div>
+                </div>
+              </div>
+
+              <!-- Invoice 2 (Overdue) -->
+              <div class="py-3 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-rose-300">INV-2026-0002 (CloudPulse Tech)</div>
+                  <div class="text-[11px] text-rose-400/80">Due: Oct 30, 2026 (16 days overdue)</div>
+                </div>
+                <div class="text-right">
+                  <span class="text-[10px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2 py-0.5 rounded-full">
+                    OVERDUE ($14,750)
+                  </span>
+                  <button onclick="triggerMitigation('CloudPulse Technologies Pvt Ltd')" class="text-[10px] text-purple-400 hover:text-purple-300 block mt-1 underline">
+                    Send Reminder
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- ================= VIEW 2: CUSTOMER PORTAL ============== -->
+      <!-- ======================================================== -->
+      <div id="customerViewContainer" class="hidden space-y-8 animate-in fade-in duration-300">
+
+        <!-- Customer Portal Banner -->
+        <div class="p-6 rounded-2xl bg-gradient-to-r from-purple-900/60 via-slate-900 to-indigo-900/60 border border-purple-500/40 relative overflow-hidden">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <span class="text-xs font-bold text-purple-300 bg-purple-500/20 border border-purple-500/30 px-3 py-1 rounded-full uppercase tracking-wider">
+                Self-Service Customer Billing Portal
+              </span>
+              <h2 class="text-2xl font-black text-white mt-2">Welcome, Ananya Desai (CloudPulse Technologies)</h2>
+              <p class="text-xs text-slate-300 mt-1">
+                Account ID: CUST-CLOUDPULSE-2026 • Corporate Scale Yearly Plan • 5 Active Enterprise Seats
+              </p>
+            </div>
+            <button onclick="switchView('admin')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition self-start sm:self-auto flex items-center gap-1.5">
+              <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+              <span>Back to Admin ERP</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Overdue Invoice Alert Box inside Customer Portal -->
+        <div class="bg-rose-500/10 border border-rose-500/40 p-5 rounded-2xl flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+              <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-rose-300">Action Required: Invoice INV-2026-0002 is Pending</h3>
+              <p class="text-xs text-slate-300 mt-1">
+                Amount: <b class="text-white">$14,750.00</b> (Includes 18% GST). Was due on <b>Oct 30, 2026</b>.
+                Your dedicated priority server remains active during grace period.
+              </p>
+            </div>
+          </div>
+          <button onclick="customerPayInvoiceModal()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 flex items-center gap-2 transition active:scale-95 shrink-0">
+            <i data-lucide="credit-card" class="w-4 h-4"></i>
+            <span>Pay Invoice Online ($14,750)</span>
+          </button>
+        </div>
+
+        <!-- Customer Subscriptions & Plan Details -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="glass-card p-6 rounded-2xl space-y-4 lg:col-span-2">
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="repeat" class="w-4 h-4 text-purple-400"></i>
+                Active Plan & Seat Allocation
+              </h3>
+              <span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-semibold">
+                ACTIVE SUBSCRIPTION
+              </span>
+            </div>
+
+            <div class="p-4 bg-slate-950/60 rounded-xl border border-slate-800 space-y-3">
+              <div class="flex justify-between items-center">
+                <span class="text-sm font-bold text-white">Corporate Scale Yearly (15% Off)</span>
+                <span class="text-sm font-extrabold text-purple-300">$32,000 / year</span>
+              </div>
+              <p class="text-xs text-slate-400">
+                Annual billed subscription with priority dedicated server, unlimited transactions, 5 enterprise seats included.
+              </p>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-800 text-xs">
+                <div>
+                  <span class="text-slate-400">Start Date:</span>
+                  <div class="font-semibold text-slate-200 mt-0.5">Sep 15, 2026</div>
+                </div>
+                <div>
+                  <span class="text-slate-400">Next Renewal:</span>
+                  <div class="font-semibold text-slate-200 mt-0.5">Sep 15, 2027</div>
+                </div>
+                <div>
+                  <span class="text-slate-400">Seats Used:</span>
+                  <div class="font-semibold text-purple-300 mt-0.5">5 / 5 Allocated</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+              <button onclick="showToast('Upgrade Request Sent', 'Our account manager will contact you with 10 additional seats quote.', 'sparkles')" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition">
+                + Add More Seats
+              </button>
+              <button onclick="showToast('Plan Change Requested', 'Switching to Monthly billing cycle next term.', 'repeat')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold text-xs transition">
+                Change Billing Frequency
+              </button>
+              <button onclick="showToast('Pause Request', 'Your request to pause subscription from next month is registered.', 'clock')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 font-semibold text-xs transition">
+                Pause Subscription
+              </button>
+            </div>
+          </div>
+
+          <!-- Billing History Box -->
+          <div class="glass-card p-6 rounded-2xl space-y-4">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i data-lucide="receipt" class="w-4 h-4 text-amber-400"></i>
+              Your Invoices
+            </h3>
+            <div class="space-y-3">
+              <div class="p-3 bg-slate-950/60 rounded-xl border border-rose-500/30 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-white">INV-2026-0002</div>
+                  <div class="text-[10px] text-rose-400">Oct 15, 2026 • Overdue</div>
+                </div>
+                <div class="text-right">
+                  <div class="text-xs font-bold text-rose-400">$14,750</div>
+                  <button onclick="customerPayInvoiceModal()" class="text-[10px] text-emerald-400 font-bold hover:underline mt-0.5">
+                    Pay Now →
+                  </button>
+                </div>
+              </div>
+
+              <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-white">INV-2025-0098</div>
+                  <div class="text-[10px] text-slate-400">Sep 15, 2025 • Paid</div>
+                </div>
+                <div class="text-right">
+                  <div class="text-xs font-bold text-slate-300">$32,000</div>
+                  <span class="text-[10px] text-emerald-400">Paid (Bank)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Download Button -->
+            <button onclick="showToast('Receipt Downloaded', 'PDF invoice INV-2026-0002 saved to downloads.', 'check')" class="w-full text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 rounded-xl border border-slate-700 flex items-center justify-center gap-1.5 transition">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              <span>Download PDF Statement</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- FEATURE 3: FLOATING AI COPILOT ASSISTANT DRAWER ======= -->
+  <!-- ======================================================== -->
+  <!-- Floating Launcher Button -->
+  <button id="copilotLauncherBtn" onclick="toggleCopilot()" class="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm shadow-2xl shadow-purple-600/40 flex items-center gap-2.5 transition transform hover:scale-105 active:scale-95 border border-purple-400/40 pulse-glow">
+    <i data-lucide="sparkles" class="w-5 h-5 text-amber-300 animate-spin" style="animation-duration: 6s;"></i>
+    <span>AI Business Assistant</span>
+    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+  </button>
+
+  <!-- Copilot Drawer Modal -->
+  <div id="copilotDrawer" class="fixed inset-y-0 right-0 w-full sm:w-[480px] bg-slate-950 border-l border-slate-800 z-50 shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col">
+    <!-- Drawer Header -->
+    <div class="p-4 border-b border-slate-800 bg-slate-900/90 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-md">
+          <i data-lucide="bot" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            Brightloop AI Copilot
+            <span class="text-[9px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.2 rounded-full">v2.4 Live</span>
+          </h3>
+          <p class="text-[10px] text-slate-400">Autonomous B2B Subscription & Revenue Intelligence</p>
+        </div>
+      </div>
+      <button onclick="toggleCopilot()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <!-- Quick Prompt Chips -->
+    <div class="p-3 border-b border-slate-800/80 bg-slate-900/40 space-y-1.5">
+      <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">Suggested Business Inquiries</div>
+      <div class="flex flex-wrap gap-1.5">
+        <button onclick="sendQuickPrompt(0)" class="text-[11px] bg-slate-800/90 hover:bg-purple-600/20 hover:text-purple-300 hover:border-purple-500/40 text-slate-300 border border-slate-700 px-2.5 py-1 rounded-lg transition text-left">
+          ⚡ Analyze Cashflow & Overdue Risk
+        </button>
+        <button onclick="sendQuickPrompt(1)" class="text-[11px] bg-slate-800/90 hover:bg-purple-600/20 hover:text-purple-300 hover:border-purple-500/40 text-slate-300 border border-slate-700 px-2.5 py-1 rounded-lg transition text-left">
+          🎯 Customer Churn & Health Radar
+        </button>
+        <button onclick="sendQuickPrompt(2)" class="text-[11px] bg-slate-800/90 hover:bg-purple-600/20 hover:text-purple-300 hover:border-purple-500/40 text-slate-300 border border-slate-700 px-2.5 py-1 rounded-lg transition text-left">
+          📝 Auto-Draft Payment Reminder Email
+        </button>
+      </div>
+    </div>
+
+    <!-- Messages Container -->
+    <div id="copilotMessages" class="flex-1 p-4 overflow-y-auto space-y-4 text-xs">
+      <!-- Welcome Message -->
+      <div class="flex items-start gap-2.5">
+        <div class="w-7 h-7 rounded-lg bg-purple-600/20 text-purple-300 border border-purple-500/30 flex items-center justify-center shrink-0">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl rounded-tl-sm text-slate-200 leading-relaxed max-w-[85%]">
+          Hello! I am your <b>Brightloop AI Copilot</b>. I continuously audit your recurring contracts, predict late payments, calculate MRR expansion, and auto-compose dunning emails. How can I assist your finance team right now?
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Bar -->
+    <div class="p-3 border-t border-slate-800 bg-slate-900/80">
+      <form onsubmit="handleCopilotSubmit(event)" class="flex items-center gap-2">
+        <input id="copilotInput" type="text" placeholder="Ask about MRR, churn risk, or draft emails..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500" />
+        <button type="submit" class="p-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white transition shrink-0">
+          <i data-lucide="send" class="w-4 h-4"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= PAYMENT MODAL ================= -->
+  <div id="paymentModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-5 animate-in fade-in zoom-in-95 duration-200">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+          Secure Enterprise Payment Gateway
+        </h3>
+        <button onclick="closePaymentModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div>
+        <div class="text-xs text-slate-400">Paying for Invoice:</div>
+        <div class="text-base font-extrabold text-white mt-0.5">INV-2026-0002 (CloudPulse Technologies)</div>
+        <div class="text-2xl font-black text-emerald-400 mt-2">$14,750.00 <span class="text-xs font-normal text-slate-400">USD</span></div>
+      </div>
+
+      <div class="space-y-2 text-xs">
+        <label class="block text-slate-300 font-medium">Select Payment Method:</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button class="p-3 rounded-xl border border-purple-500 bg-purple-600/10 text-purple-300 font-semibold text-center">
+            🏦 Corporate Wire / IMPS
+          </button>
+          <button class="p-3 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 text-center hover:border-slate-700">
+            💳 Corporate Card
+          </button>
+        </div>
+      </div>
+
+      <button onclick="confirmCustomerPayment()" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2">
+        <i data-lucide="check" class="w-4 h-4"></i>
+        <span>Confirm Payment & Clear Overdue</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= JAVASCRIPT LOGIC ================= -->
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Chart.js MRR Trend
+    const ctx = document.getElementById('mrrChart').getContext('2d');
+    const mrrChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['Jun', 'Jul', 'Aug', 'Sep', 'Oct (Now)', 'Nov (AI Est)'],
+        datasets: [{
+          label: 'MRR ($)',
+          data: [7359, 8279, 8994, 9608, 10221, 11447],
+          borderColor: '#a855f7',
+          backgroundColor: 'rgba(168, 85, 247, 0.15)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.35,
+          pointBackgroundColor: '#9333ea',
+          pointBorderColor: '#ffffff',
+          pointRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0f172a',
+            borderColor: '#334155',
+            borderWidth: 1,
+            titleColor: '#f8fafc',
+            bodyColor: '#e2e8f0',
+            padding: 10,
+            callbacks: {
+              label: function(context) {
+                return ' Recurring: $' + context.raw.toLocaleString();
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: { color: '#94a3b8', font: { size: 11 } }
+          },
+          y: {
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: {
+              color: '#94a3b8',
+              font: { size: 11 },
+              callback: function(value) { return '$' + value; }
+            }
+          }
+        }
+      }
+    });
+
+    // View Switcher (Admin vs Customer)
+    function switchView(viewName) {
+      const adminContainer = document.getElementById('adminViewContainer');
+      const customerContainer = document.getElementById('customerViewContainer');
+      const btnAdmin = document.getElementById('btnAdminView');
+      const btnCustomer = document.getElementById('btnCustomerView');
+
+      if (viewName === 'admin') {
+        adminContainer.classList.remove('hidden');
+        customerContainer.classList.add('hidden');
+        btnAdmin.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 bg-purple-600 text-white shadow-md";
+        btnCustomer.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition flex items-center gap-1.5";
+      } else {
+        adminContainer.classList.add('hidden');
+        customerContainer.classList.remove('hidden');
+        btnCustomer.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 bg-purple-600 text-white shadow-md";
+        btnAdmin.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition flex items-center gap-1.5";
+      }
+      lucide.createIcons();
+    }
+
+    // Toast Notification System
+    function showToast(title, message, icon = 'check-circle-2') {
+      const toast = document.getElementById('toastNotification');
+      document.getElementById('toastTitle').textContent = title;
+      document.getElementById('toastMessage').textContent = message;
+      
+      const iconContainer = document.getElementById('toastIcon');
+      iconContainer.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i>`;
+      lucide.createIcons();
+
+      toast.classList.remove('translate-y-[-100px]', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-[-100px]', 'opacity-0');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 4000);
+    }
+
+    // Trigger Billing Run
+    function triggerBillingRun() {
+      const btn = document.getElementById('billingRunBtn');
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Running...</span>`;
+      lucide.createIcons();
+
+      setTimeout(() => {
+        btn.innerHTML = `<i data-lucide="zap" class="w-3.5 h-3.5 text-amber-300"></i><span class="hidden md:inline">⚡ Run Billing Day</span><span class="md:hidden">Run</span>`;
+        lucide.createIcons();
+        showToast('Billing Run Completed ⚡', 'Scanned 3 active contracts. 0 new invoices generated (all up-to-date).', 'zap');
+      }, 1200);
+    }
+
+    // Trigger Smart Mitigation for CloudPulse
+    function triggerMitigation(company) {
+      showToast(
+        'Autonomous Recovery Dispatched 🚀',
+        `Dispatched 10% Early Settlement incentive with 1-click UPI deep link to ${company}. Health score updated.`,
+        'shield-alert'
+      );
+      // Auto-open Copilot with draft
+      toggleCopilot(true);
+      sendQuickPrompt(2);
+    }
+
+    // Copilot Drawer Controls
+    function toggleCopilot(forceOpen = false) {
+      const drawer = document.getElementById('copilotDrawer');
+      if (forceOpen || drawer.classList.contains('translate-x-full')) {
+        drawer.classList.remove('translate-x-full');
+      } else {
+        drawer.classList.add('translate-x-full');
+      }
+    }
+
+    // Pre-canned AI Answers
+    const aiResponses = [
+      {
+        query: 'Analyze our current cashflow risk and overdue invoices.',
+        answer: `📊 <b>Cashflow & Overdue Risk Audit:</b><br><br>
+• <b>Total Receivables Outstanding:</b> $14,750 (Invoice INV-2026-0002)<br>
+• <b>Primary At-Risk Account:</b> CloudPulse Technologies Pvt Ltd (16 days overdue)<br>
+• <b>Collection Efficiency:</b> 92.4% (Benchmark >85% is strong)<br>
+• <b>Recommendation:</b> Dispatched autonomous early settlement incentive to prevent involuntary churn.`
+      },
+      {
+        query: 'Which customers have high churn risk and need immediate retention?',
+        answer: `🎯 <b>Customer Risk Assessment Radar:</b><br><br>
+• 🔴 <b>CloudPulse Tech (Health: 58/100 - Critical):</b> Unpaid annual renewal ($14,750). Auto-renew mandate pending confirmation.<br>
+• 🟡 <b>Green Logistics (Health: 76/100 - Moderate):</b> Quotation SUB-2026-0003 pending sign-off for 15 days.<br>
+• 🟢 <b>Nexus Retail (Health: 94/100 - Exemplary):</b> $8,491 paid on-time with Odoo Brand Edition.<br><br>
+⚡ <i>Suggested Action: Send a 10% early-settlement incentive to CloudPulse Tech to recover cashflow immediately.</i>`
+      },
+      {
+        query: 'Draft a professional payment follow-up email for CloudPulse Technologies.',
+        answer: `📝 <b>Enterprise Follow-up Email Draft:</b><br><br>
+<div class="p-3 bg-slate-950 rounded-xl border border-slate-800 font-mono text-[11px] space-y-2">
+  <div><b>Subject:</b> Gentle Reminder: Invoice INV-2026-0002 for CloudPulse Technologies</div>
+  <div class="text-slate-400">Dear Ananya Desai & Finance Team,</div>
+  <div class="text-slate-400">This is a gentle reminder regarding Invoice INV-2026-0002 for $14,750, due on Oct 30, 2026. Please complete the settlement at your earliest convenience via the link below:</div>
+  <div class="text-purple-300"><b>Payment Deep Link:</b> https://brightloop-subscriptions-7xqd.vercel.app/portal</div>
+</div>
+<button onclick="copyEmailText()" class="mt-2 px-3 py-1 bg-purple-600/30 hover:bg-purple-600 text-purple-300 hover:text-white rounded-lg border border-purple-500/40 text-[10px] font-semibold transition">
+  📋 Copy Email to Clipboard
+</button>`
+      }
+    ];
+
+    function sendQuickPrompt(index) {
+      const resp = aiResponses[index];
+      appendCopilotMessage('user', resp.query);
+      setTimeout(() => {
+        appendCopilotMessage('ai', resp.answer);
+      }, 500);
+    }
+
+    function handleCopilotSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('copilotInput');
+      const text = input.value.trim();
+      if (!text) return;
+      
+      appendCopilotMessage('user', text);
+      input.value = '';
+
+      setTimeout(() => {
+        let answer = `I analyzed your query: "<b>${text}</b>".<br><br>Current MRR is <b>$10,221</b> (+14.2% MoM growth) with $14,750 overdue under active recovery protocol. Net retention is 108.4% across all active B2B subscriptions.`;
+        appendCopilotMessage('ai', answer);
+      }, 700);
+    }
+
+    function appendCopilotMessage(sender, htmlContent) {
+      const container = document.getElementById('copilotMessages');
+      const div = document.createElement('div');
+      div.className = 'flex items-start gap-2.5';
+
+      if (sender === 'user') {
+        div.innerHTML = `
+          <div class="w-7 h-7 rounded-lg bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 flex items-center justify-center shrink-0 ml-auto">
+            <i data-lucide="user" class="w-3.5 h-3.5"></i>
+          </div>
+          <div class="bg-purple-600 text-white p-3 rounded-2xl rounded-tr-sm leading-relaxed max-w-[85%] ml-auto font-medium">
+            ${htmlContent}
+          </div>
+        `;
+      } else {
+        div.innerHTML = `
+          <div class="w-7 h-7 rounded-lg bg-purple-600/20 text-purple-300 border border-purple-500/30 flex items-center justify-center shrink-0">
+            <i data-lucide="bot" class="w-3.5 h-3.5"></i>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl rounded-tl-sm text-slate-200 leading-relaxed max-w-[85%]">
+            ${htmlContent}
+          </div>
+        `;
+      }
+
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+      lucide.createIcons();
+    }
+
+    function copyEmailText() {
+      navigator.clipboard.writeText("Subject: Gentle Reminder: Invoice INV-2026-0002 for CloudPulse Technologies\n\nDear Ananya Desai & Finance Team,\nThis is a gentle reminder regarding Invoice INV-2026-0002 for $14,750. Please complete the settlement at https://brightloop-subscriptions-7xqd.vercel.app/portal");
+      showToast('Copied to Clipboard 📋', 'Email draft copied successfully.', 'check');
+    }
+
+    // Payment Modal
+    function customerPayInvoiceModal() {
+      document.getElementById('paymentModal').classList.remove('hidden');
+    }
+
+    function closePaymentModal() {
+      document.getElementById('paymentModal').classList.add('hidden');
+    }
+
+    function confirmCustomerPayment() {
+      closePaymentModal();
+      showToast('Payment Successful! 💳', '$14,750.00 settled via IMPS. Invoice status changed to PAID.', 'shield-check');
+    }
+  </script>
+</body>
+</html>
