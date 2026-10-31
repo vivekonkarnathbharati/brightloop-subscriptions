@@ -30,8 +30,7 @@ export function SignInPage() {
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  // Guest Mode Modal state
-  const [showGuestModal, setShowGuestModal] = useState(false);
+
 
   // Forgot password field
   const [forgotEmail, setForgotEmail] = useState('');
@@ -189,20 +188,6 @@ export function SignInPage() {
                   </p>
                 </>
               )}
-            </div>
-
-            {/* Google Guest Mode Info Box */}
-            <div className="hidden md:block text-xs text-[#444746] leading-relaxed pt-6">
-              <p>
-                Not your computer? Use Guest mode to sign in privately.{' '}
-                <button
-                  type="button"
-                  onClick={() => setShowGuestModal(true)}
-                  className={`${linkTheme} font-medium underline inline transition-colors`}
-                >
-                  Learn more about using Guest mode
-                </button>
-              </p>
             </div>
           </div>
 
@@ -519,13 +504,9 @@ export function SignInPage() {
       {/* FOOTER: Utility Links */}
       <footer className="w-full max-w-[1040px] flex flex-row items-center justify-end text-xs text-[#444746] py-4 px-4 gap-6 mt-4">
         <div className="flex items-center gap-6">
-          <button
-            type="button"
-            onClick={() => setShowGuestModal(true)}
-            className="hover:bg-[#e9eef6] px-2 py-1 rounded cursor-pointer transition-colors"
-          >
+          <span className="hover:bg-[#e9eef6] px-2 py-1 rounded cursor-pointer transition-colors">
             Help
-          </button>
+          </span>
           <span className="hover:bg-[#e9eef6] px-2 py-1 rounded cursor-pointer transition-colors">
             Privacy
           </span>
@@ -534,58 +515,6 @@ export function SignInPage() {
           </span>
         </div>
       </footer>
-
-      {/* ========================================================= */}
-      {/* GUEST MODE MODAL (Fully Functional)                      */}
-      {/* ========================================================= */}
-      {showGuestModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2.5 text-slate-900 font-bold text-base">
-                <div className="w-8 h-8 rounded-full bg-[#F5EDE1] text-[#9C6638] flex items-center justify-center">
-                  <Shield className="w-4 h-4" />
-                </div>
-                Using Guest Mode
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowGuestModal(false)}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs text-[#444746] leading-relaxed">
-              <p>
-                Guest mode allows you to sign in and review the <strong>Brightloop Billing Platform</strong> on a shared computer without saving session state or cookies to the browser.
-              </p>
-              <div className="bg-[#FAF7F2] p-3 rounded-xl border border-[#EAE2D5] space-y-1.5">
-                <div className="font-semibold text-[#2C2621] flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5 text-[#9C6638]" />
-                  What happens in Guest Mode:
-                </div>
-                <ul className="list-disc pl-4 space-y-1 text-[#5A5046]">
-                  <li>Your browsing history and active login token are not permanently saved.</li>
-                  <li>When you close this browser tab, you will be signed out automatically.</li>
-                  <li>Evaluators can test Customer, Admin, or Employee portals freely.</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                type="button"
-                onClick={() => setShowGuestModal(false)}
-                className={`${buttonTheme} text-xs font-semibold px-6 py-2 rounded-full`}
-              >
-                Got it
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
