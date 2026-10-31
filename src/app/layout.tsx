@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import Navigation from '@/components/Navigation';
 
 export const metadata: Metadata = {
-  title: 'Brightloop — Subscription Management & Recurring Billing',
-  description: 'Enterprise ERP for plans, subscriptions, and automated billing. Built for Odoo Hackathon 2026.',
+  title: 'Brightloop — Subscription Management & Automated Billing Engine',
+  description:
+    'Full-stack subscription management, automated recurring billing, discount engine, and executive finance dashboard for Brightloop Software (Odoo Hackathon 2026).',
 };
 
 export default function RootLayout({
@@ -13,10 +13,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className="antialiased bg-slate-950 text-slate-100">
-        <Navigation>{children}</Navigation>
-      </body>
+    <html lang="en">
+      <body className="antialiased bg-slate-100 text-slate-900">{children}</body>
     </html>
   );
 }
