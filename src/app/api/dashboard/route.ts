@@ -19,12 +19,12 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
     });
 
-    const activeSubs = subscriptions.filter((s) => s.status === 'ACTIVE');
-    const quotations = subscriptions.filter((s) => s.status === 'QUOTATION');
+    const activeSubs = subscriptions.filter((s: any) => s.status === 'ACTIVE');
+    const quotations = subscriptions.filter((s: any) => s.status === 'QUOTATION');
 
     // Calculate MRR (Monthly Recurring Revenue)
-    const mrr = activeSubs.reduce((acc, sub) => {
-      const subTotal = sub.lines.reduce((lAcc, line) => lAcc + line.totalAmount, 0);
+    const mrr = activeSubs.reduce((acc: number, sub: any) => {
+      const subTotal = sub.lines.reduce((lAcc: number, line: any) => lAcc + line.totalAmount, 0);
       if (sub.plan.billingFrequency === 'YEARLY') {
         return acc + subTotal / 12;
       }
@@ -35,14 +35,14 @@ export async function GET() {
 
     // Total Revenue Collected (from paid payments)
     const allPayments = await prisma.payment.findMany();
-    const totalRevenueCollected = allPayments.reduce((acc, p) => acc + p.amount, 0);
+    const totalRevenueCollected = allPayments.reduce((acc: number, p: any) => acc + p.amount, 0);
 
     // Overdue / Outstanding Invoices
     const overdueInvoices = invoices.filter(
-      (inv) => inv.status === 'CONFIRMED' && new Date(inv.dueDate) < new Date()
+      (inv: any) => inv.status === 'CONFIRMED' && new Date(inv.dueDate) < new Date()
     );
     const overdueAmount = overdueInvoices.reduce(
-      (acc, inv) => acc + (inv.totalAmount - inv.paidAmount),
+      (acc: number, inv: any) => acc + (inv.totalAmount - inv.paidAmount),
       0
     );
 

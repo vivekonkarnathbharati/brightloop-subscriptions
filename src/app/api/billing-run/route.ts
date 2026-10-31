@@ -25,7 +25,7 @@ export async function POST() {
 
     for (const sub of activeSubscriptions) {
       // Check if already billed this calendar month
-      const alreadyBilled = sub.invoices.some((inv) => {
+      const alreadyBilled = sub.invoices.some((inv: any) => {
         const invDate = new Date(inv.issueDate);
         return (
           invDate.getMonth() === currentMonth &&
@@ -45,7 +45,7 @@ export async function POST() {
 
       let subtotal = 0;
       let taxAmount = 0;
-      const invoiceLines = sub.lines.map((l) => {
+      const invoiceLines = sub.lines.map((l: any) => {
         subtotal += l.subtotal;
         taxAmount += l.taxAmount;
         const desc = l.variant

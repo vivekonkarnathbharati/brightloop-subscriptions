@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
-    const alreadyBilledThisCycle = subscription.invoices.some((inv) => {
+    const alreadyBilledThisCycle = subscription.invoices.some((inv: any) => {
       const invDate = new Date(inv.issueDate);
       return (
         invDate.getMonth() === currentMonth &&
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
     // Compute Lines
     let subtotal = 0;
     let taxAmount = 0;
-    const invoiceLines = subscription.lines.map((l) => {
+    const invoiceLines = subscription.lines.map((l: any) => {
       subtotal += l.subtotal;
       taxAmount += l.taxAmount;
       const desc = l.variant

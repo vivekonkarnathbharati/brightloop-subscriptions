@@ -188,7 +188,7 @@ async function main() {
   });
 
   // 7. Subscriptions (across different lifecycles: Active, Quotation, Draft)
-  const odooVariant = erpSoftware.variants.find((v) => v.variantName.includes('Odoo'));
+  const odooVariant = erpSoftware.variants.find((v: any) => v.variantName.includes('Odoo'));
 
   // Active Subscription 1 for Nexus Retail
   const sub1 = await prisma.subscription.create({
