@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌟 Brightloop Subscription Management System
 
-## Getting Started
+> **Odoo Hackathon 2026 Submission** | **Virtual Round**  
+> Built by Team Vivek Onkarnath Bharati, Ranit Biswas, Pawan Vimlesh Mishra, Prithwi Roy.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 📌 Executive Summary
+**Brightloop Software** sells enterprise business software, add-ons, and product variants on recurring subscription cycles. Previously managed through fragile manual spreadsheets and prone to missed renewals, delayed invoices, and revenue leakage, this platform provides Brightloop with a centralized, automated recurring billing engine.
+
+---
+
+## 🚀 Key Capabilities
+
+### 1. 🛡️ Role-Based Access Control (RBAC)
+- **Admin**: Complete system oversight, staff member onboarding, tax configuration, and global discount rules.
+- **Internal Staff / Sales Rep**: Daily customer management, quote generation, and subscription tracking.
+- **Customer Portal**: Self-service portal where customers exclusively view their own active subscriptions, download invoices, and inspect billing history.
+- **Enterprise Security**: Enforced password complexity (uppercase, lowercase, special character, 8+ length) and email uniqueness.
+
+### 2. 📦 Product & Variant Catalog
+- Multi-tier product setup (Software, Add-ons, Services) with baseline sales and cost prices.
+- **Variant Engine**: Dynamic price adjustments (e.g., Selecting "Odoo" brand variant automatically adds +$560 to line item calculations).
+
+### 3. 🔄 Subscription Lifecycle State Machine
+- Linear audit-logged status transitions:
+  $$\text{Draft} \longrightarrow \text{Quotation} \longrightarrow \text{Confirmed} \longrightarrow \text{Active} \longrightarrow \text{Closed}$$
+- Configurable renewal, auto-close, and pause behaviors across daily, weekly, monthly, and yearly cycles.
+
+### 4. ⚡ Automated Billing & Invoicing Engine
+- One-click and batch invoice generation directly from active subscriptions.
+- Automated tax rules (18% GST baseline) and discount deduction.
+- Idempotent generation logic preventing double-billing or skipped billing periods.
+- Invoice states: `Draft` $\rightarrow$ `Confirmed` $\rightarrow$ `Paid`.
+
+### 5. 🏷️ Discount & Promotion Engine
+- Admin-governed rules: Fixed amount or Percentage discounts.
+- Enforces minimum purchase amounts, minimum seat quantities, active date windows, and hard usage caps (auto-deactivates once limit is exhausted).
+
+### 6. 📊 Executive Finance Dashboard
+- Real-time KPIs: **Monthly Recurring Revenue (MRR)**, **Annual Recurring Revenue (ARR)**, **Active Subscriptions**, and **Overdue Invoices**.
+- Sub-2-second query response time with CSV/PDF reporting capabilities.
+
+---
+
+## 🛠️ Architecture & Tech Stack
+
+```mermaid
+flowchart TD
+    UI["Frontend: Next.js 14 App Router + Tailwind CSS + Lucide React"]
+    API["Backend: Next.js Route Handlers (/api/...)"]
+    ORM["Data Layer: Prisma ORM"]
+    DB[("Database: SQLite (Zero-Config, Self-Contained)")]
+
+    UI --> API
+    API --> ORM
+    ORM --> DB
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Frontend & Backend**: Next.js 14+ (App Router, TypeScript)
+- **Styling**: Tailwind CSS + shadcn/ui patterns
+- **Database**: SQLite with Prisma ORM
+- **Visualizations**: Recharts
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 💻 Local Setup & Run Guide
 
-## Learn More
+```bash
+# 1. Clone the repository
+git clone https://github.com/vivekonkarnathbharati/brightloop-subscriptions.git
+cd brightloop-subscriptions
 
-To learn more about Next.js, take a look at the following resources:
+# 2. Install dependencies
+npm install
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# 3. Synchronize database schema
+npx prisma db push
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# 4. Run the development server
+npm run dev
+```
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Open [http://localhost:3000](http://localhost:3000) in your browser.

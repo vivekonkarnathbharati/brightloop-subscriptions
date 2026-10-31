@@ -1,0 +1,167 @@
+// Prisma Schema for Brightloop Subscription Management System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  password      String
+  role          String         @default("CUSTOMER") // "ADMIN" | "STAFF" | "CUSTOMER"
+  companyName   String?
+  phone         String?
+  subscriptions Subscription[]
+  invoices      Invoice[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Product {
+  id             String            @id @default(cuid())
+  name           String
+  type           String            @default("SOFTWARE") // "SOFTWARE" | "ADDON" | "SERVICE"
+  salesPrice     Float
+  costPrice      Float             @default(0)
+  notes          String?
+  variants       ProductVariant[]
+  subLines       SubscriptionLine[]
+  createdAt      DateTime          @default(now())
+}
+
+model ProductVariant {
+  id              String            @id @default(cuid())
+  productId       String
+  product         Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantName     String            // e.g. "Brand: Odoo"
+  priceAdjustment Float             @default(0) // e.g. +560.0
+  subLines        SubscriptionLine[]
+  createdAt       DateTime          @default(now())
+}
+
+model SubscriptionPlan {
+  id               String         @id @default(cuid())
+  name             String         // e.g. "Standard Business Monthly"
+  description      String?
+  cost             Float
+  billingFrequency String         @default("MONTHLY") // "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY"
+  minQuantity      Int            @default(1)
+  startDate        DateTime?
+  endDate          DateTime?
+  autoCloseOnEnd   Boolean        @default(false)
+  canPause         Boolean        @default(true)
+  canRenew         Boolean        @default(true)
+  subscriptions    Subscription[]
+  createdAt        DateTime       @default(now())
+}
+
+model Subscription {
+  id                 String             @id @default(cuid())
+  subscriptionNumber String             @unique // e.g. "SUB-2026-0001"
+  customerId         String
+  customer           User               @relation(fields: [customerId], references: [id])
+  planId             String
+  plan               SubscriptionPlan   @relation(fields: [planId], references: [id])
+  startDate          DateTime           @default(now())
+  expiryDate         DateTime?
+  paymentTerms       String             @default("Net 15") // e.g. "Immediate", "Net 15", "Net 30"
+  status             String             @default("DRAFT") // "DRAFT" | "QUOTATION" | "CONFIRMED" | "ACTIVE" | "CLOSED"
+  lastBilledAt       DateTime?
+  notes              String?
+  lines              SubscriptionLine[]
+  invoices           Invoice[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model SubscriptionLine {
+  id             String          @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription    @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product         @relation(fields: [productId], references: [id])
+  variantId      String?
+  variant        ProductVariant? @relation(fields: [variantId], references: [id])
+  quantity       Int             @default(1)
+  unitPrice      Float
+  taxRate        Float           @default(18.0) // 18% GST
+  taxAmount      Float           @default(0)
+  subtotal       Float
+  totalAmount    Float
+}
+
+model Discount {
+  id                 String    @id @default(cuid())
+  code               String    @unique // e.g. "ENTERPRISE20"
+  name               String
+  type               String    @default("PERCENTAGE") // "PERCENTAGE" | "FIXED"
+  value              Float     // e.g. 20 (for 20%) or 500 (for $500 off)
+  minQuantity        Int       @default(1)
+  minPurchaseAmount  Float     @default(0)
+  maxUsageLimit      Int       @default(100)
+  currentUsageCount  Int       @default(0)
+  startDate          DateTime?
+  endDate            DateTime?
+  appliesToAll       Boolean   @default(true)
+  specificProductId  String?
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+}
+
+model TaxRule {
+  id        String   @id @default(cuid())
+  name      String   // e.g. "Standard GST"
+  rate      Float    @default(18.0)
+  isDefault Boolean  @default(true)
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  invoiceNumber  String        @unique // e.g. "INV-2026-0001"
+  subscriptionId String
+  subscription   Subscription  @relation(fields: [subscriptionId], references: [id])
+  customerId     String
+  customer       User          @relation(fields: [customerId], references: [id])
+  issueDate      DateTime      @default(now())
+  dueDate        DateTime
+  status         String        @default("DRAFT") // "DRAFT" | "CONFIRMED" | "PAID" | "CANCELLED"
+  subtotal       Float
+  taxAmount      Float
+  discountAmount Float         @default(0)
+  totalAmount    Float
+  paidAmount     Float         @default(0)
+  notes          String?
+  lines          InvoiceLine[]
+  payments       Payment[]
+  createdAt      DateTime      @default(now())
+}
+
+model InvoiceLine {
+  id             String   @id @default(cuid())
+  invoiceId      String
+  invoice        Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description    String
+  quantity       Int      @default(1)
+  unitPrice      Float
+  taxRate        Float    @default(18.0)
+  taxAmount      Float    @default(0)
+  discountAmount Float    @default(0)
+  totalAmount    Float
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  invoiceId     String
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  method        String   @default("BANK_TRANSFER") // "BANK_TRANSFER" | "CREDIT_CARD" | "UPI" | "CASH"
+  amount        Float
+  paymentDate   DateTime @default(now())
+  referenceNote String?
+  createdAt     DateTime @default(now())
+}
