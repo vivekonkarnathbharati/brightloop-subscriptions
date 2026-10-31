@@ -23,6 +23,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import SmartRevenueWaterfall from '@/components/SmartRevenueWaterfall';
+import CustomerRiskRadar from '@/components/CustomerRiskRadar';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
@@ -192,6 +194,12 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Smart Revenue Analytics: MRR Waterfall & Cashflow Projections */}
+      <SmartRevenueWaterfall />
+
+      {/* Customer Health & Churn Risk Radar */}
+      <CustomerRiskRadar />
 
       {/* 2-Column Section: Recent Subscriptions & Recent Invoices */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

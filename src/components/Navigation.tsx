@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import AICopilotDrawer from './AICopilotDrawer';
 import {
   LayoutDashboard,
   Repeat,
@@ -209,6 +210,9 @@ export default function Navigation({ children }: { children: React.ReactNode }) 
           {children}
         </main>
       </div>
+
+      {/* Globally Floating AI Copilot Assistant */}
+      <AICopilotDrawer />
     </div>
   );
 }
